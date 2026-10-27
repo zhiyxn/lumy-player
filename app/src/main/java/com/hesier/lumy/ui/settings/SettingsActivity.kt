@@ -11,7 +11,10 @@ import com.hesier.lumy.ui.ThemedActivity
 import androidx.core.view.children
 import androidx.lifecycle.lifecycleScope
 import com.hesier.lumy.ui.widget.attempt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hesier.lumy.core.TrackLanguage
@@ -41,6 +44,7 @@ import com.hesier.lumy.ui.widget.Option
 import com.hesier.lumy.ui.widget.OptionsPanel
 import com.hesier.lumy.ui.widget.ReorderPanel
 import com.hesier.lumy.ui.widget.StepperPanel
+import com.hesier.lumy.ui.widget.TextPanel
 import com.hesier.lumy.ui.player.formatDelay
 
 class SettingsActivity : ThemedActivity() {
@@ -154,8 +158,29 @@ class SettingsActivity : ThemedActivity() {
                     recreate()
                 }.show()
             },
+            Row(getString(R.string.settings_ui_scale), uiScaleLabel(settings.uiScale), getString(R.string.settings_ui_scale_detail)) {
+                val scales = Settings.UI_SCALES
+                OptionsPanel(this, getString(R.string.settings_ui_scale), scales.map { Option(uiScaleLabel(it), selected = it == settings.uiScale) }) {
+                    if (scales[it] == settings.uiScale) return@OptionsPanel
+                    settings.uiScale = scales[it]
+                    // 和换主题一样：当前页面立即重建，返回栈里的页面回到前台时重建
+                    recreate()
+                }.show()
+            },
             Row(getString(R.string.settings_sidebar), sidebarSummary(), getString(R.string.settings_sidebar_detail)) { pickSidebarItems() },
             Row(getString(R.string.settings_sidebar_order), "", getString(R.string.settings_sidebar_order_detail)) { reorderSidebar() },
+            Row(getString(R.string.settings_detail_cast), onOff(settings.detailShowCast)) {
+                settings.detailShowCast = !settings.detailShowCast
+                render()
+            },
+            Row(getString(R.string.settings_detail_similar), onOff(settings.detailShowSimilar)) {
+                settings.detailShowSimilar = !settings.detailShowSimilar
+                render()
+            },
+            Row(getString(R.string.settings_detail_file_info), onOff(settings.detailShowFileInfo)) {
+                settings.detailShowFileInfo = !settings.detailShowFileInfo
+                render()
+            },
             ),
             listOf(
             Row(getString(R.string.settings_default_quality), qualityLabel(this, Quality.presets[settings.defaultQuality.coerceIn(0, Quality.presets.lastIndex)])) {
@@ -240,7 +265,10 @@ class SettingsActivity : ThemedActivity() {
             serverRows() + Row(getString(R.string.settings_add_server), "", getString(R.string.settings_add_server_detail)) {
                 startActivity(AddServerActivity.intent(this))
             },
-            listOf(Row(getString(R.string.settings_version), BuildConfig.VERSION_NAME) {}),
+            listOf(
+                Row(getString(R.string.settings_version), BuildConfig.VERSION_NAME) {},
+                Row(getString(R.string.device_info), "", getString(R.string.device_info_detail)) { showDeviceInfo() },
+            ),
         )
         showRows()
     }
@@ -325,13 +353,24 @@ class SettingsActivity : ThemedActivity() {
         }
     }
 
+    private fun showDeviceInfo() {
+        lifecycleScope.launch {
+            val text = withContext(Dispatchers.Default) { DeviceInfo.build(this@SettingsActivity) }
+            TextPanel(this@SettingsActivity, getString(R.string.device_info), text).show()
+        }
+    }
+
     private fun reorderSidebar() {
         val server = app.currentServer() ?: return
         lifecycleScope.launch {
             val libraries = attempt { server.libraries() }.getOrDefault(emptyList())
             val ordered = Settings.applyOrder(libraries, settings.sidebarOrder(entryId)) { it.id }
-            ReorderPanel(this@SettingsActivity, getString(R.string.settings_sidebar_order), ordered.map { it.id to it.title }) {
-                settings.setSidebarOrder(entryId, it)
+            val hidden = settings.hiddenSidebarItems(entryId)
+            val visible = ordered.filterNot { it.id in hidden }
+            ReorderPanel(this@SettingsActivity, getString(R.string.settings_sidebar_order), visible.map { it.id to it.title }) { ids ->
+                // 隐藏的库不参与排序但留在原位，显示中的库按新顺序填回原来的位置；取消隐藏后回到原处
+                val next = ids.iterator()
+                settings.setSidebarOrder(entryId, ordered.map { if (it.id in hidden) it.id else next.next() })
             }.show()
         }
     }
@@ -360,6 +399,9 @@ class SettingsActivity : ThemedActivity() {
             AppLanguage.TRADITIONAL_CHINESE -> R.string.language_zh_hant
         },
     )
+
+    private fun uiScaleLabel(scale: Float) =
+        if (scale == 1f) getString(R.string.ui_scale_default) else getString(R.string.ui_scale_percent, (scale * 100).roundToInt())
 
     private fun themeLabel(mode: ThemeMode) = getString(
         when (mode) {

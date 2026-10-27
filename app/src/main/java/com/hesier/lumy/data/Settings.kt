@@ -119,9 +119,35 @@ class Settings(context: Context) {
             ?.let { runCatching { AppLanguage.valueOf(it) }.getOrNull() } ?: AppLanguage.SYSTEM
         set(v) = prefs.edit().putString("language", v.name).apply()
 
+    /** 界面整体缩放（[UI_SCALES] 里的值），播放器不缩放 */
+    var uiScale: Float
+        get() = prefs.getFloat("ui_scale", 1f)
+        set(v) = prefs.edit().putFloat("ui_scale", v).apply()
+
+    /** 详情页底部各区块是否显示 */
+    var detailShowCast: Boolean
+        get() = prefs.getBoolean("detail_show_cast", true)
+        set(v) = prefs.edit().putBoolean("detail_show_cast", v).apply()
+
+    var detailShowSimilar: Boolean
+        get() = prefs.getBoolean("detail_show_similar", true)
+        set(v) = prefs.edit().putBoolean("detail_show_similar", v).apply()
+
+    var detailShowFileInfo: Boolean
+        get() = prefs.getBoolean("detail_show_file_info", true)
+        set(v) = prefs.edit().putBoolean("detail_show_file_info", v).apply()
+
     var matchFrameRate: Boolean
         get() = prefs.getBoolean("match_frame_rate", false)
         set(v) = prefs.edit().putBoolean("match_frame_rate", v).apply()
+
+    /**
+     * 本机杜比视界解码器实际解不出画面的 profile（自动检测后记下），这些片源以后直接用 HEVC 解码器播放 HDR10 基础层。
+     * 记的是设备能力，和服务器无关。
+     */
+    var brokenDolbyVisionProfiles: Set<Int>
+        get() = prefs.getStringSet("broken_dovi_profiles", emptySet())!!.mapNotNull { it.toIntOrNull() }.toSet()
+        set(v) = prefs.edit().putStringSet("broken_dovi_profiles", v.map { it.toString() }.toSet()).apply()
 
     var audioDelayMs: Long
         get() = prefs.getLong("audio_delay_ms", 0)
@@ -176,6 +202,7 @@ class Settings(context: Context) {
 
         const val PLAYLISTS_ID = "__playlists"
         val SUBTITLE_SCALES = listOf(0.8f, 1f, 1.25f, 1.5f)
+        val UI_SCALES = listOf(0.8f, 0.9f, 1f, 1.1f, 1.2f)
         /** 字幕离底部的距离（占画面高度的比例）：靠下、标准、偏高、更高 */
         val SUBTITLE_POSITIONS = listOf(0.02f, 0.06f, 0.12f, 0.2f)
     }

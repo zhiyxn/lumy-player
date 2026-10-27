@@ -36,7 +36,7 @@ class DeviceProfile(context: Context) {
     fun videoProblem(v: VideoStream): PlaybackIssue? {
         val mime = videoMime(v.codec) ?: return PlaybackIssue.UnknownVideoCodec(v.codec)
         // 杜比视界 P5 没有 HDR10 兼容层，没有杜比视界解码器时颜色会完全错误
-        if (v.hdr == HdrType.DOLBY_VISION && v.doviProfile == 5 && decoders(MimeTypes.VIDEO_DOLBY_VISION).isEmpty()) {
+        if (v.hdr == HdrType.DOLBY_VISION && v.doviProfile == 5 && !hasDolbyVisionDecoder()) {
             return PlaybackIssue.DolbyVisionProfile5
         }
         val candidates = decoders(mime)
@@ -74,7 +74,16 @@ class DeviceProfile(context: Context) {
         }
     }
 
+    fun hasDolbyVisionDecoder(): Boolean = decoders(MimeTypes.VIDEO_DOLBY_VISION).isNotEmpty()
+
     fun decoderSummary(mime: String): String = decoders(mime).joinToString { it.name }
+
+    /** 本机信息页用：有没有解码器、是否硬解、是否支持 10-bit */
+    fun hasDecoder(mime: String): Boolean = decoders(mime).isNotEmpty()
+
+    fun hasHardwareDecoder(mime: String): Boolean = decoders(mime).any { it.hardwareAccelerated }
+
+    fun supportsTenBit(mime: String): Boolean = decoders(mime).any { supportsTenBit(it, mime) }
 
     private fun decoders(mime: String): List<MediaCodecInfo> = decoderCache.getOrPut(mime) {
         try {

@@ -44,8 +44,8 @@ android {
         applicationId = "com.hesier.lumy"
         minSdk = 21
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         // 电视盒子/投影仪都是 ARM，去掉 x86 的 FFmpeg 库减小体积
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
@@ -62,6 +62,10 @@ android {
     }
 
     buildTypes {
+        // debug 用单独的包名，和正式版共存：测试包不影响日常使用的数据，正式版签名也只用于正式版
+        debug {
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -117,6 +121,7 @@ androidComponents {
 }
 
 dependencies {
+    implementation(project(":net"))
     implementation(project(":server-plex"))
     implementation(project(":server-jellyfin"))
 

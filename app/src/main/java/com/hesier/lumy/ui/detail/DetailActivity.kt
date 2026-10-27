@@ -33,6 +33,7 @@ import com.hesier.lumy.ui.widget.OptionsPanel
 import com.hesier.lumy.ui.widget.StartAlignedLayoutManager
 import com.hesier.lumy.ui.widget.KeyRepeatThrottle
 import com.hesier.lumy.ui.widget.TextPanel
+import com.hesier.lumy.ui.widget.Backdrop
 import com.hesier.lumy.ui.widget.addActionButton
 import com.hesier.lumy.ui.widget.addBadge
 import com.hesier.lumy.ui.widget.attempt
@@ -72,6 +73,7 @@ class DetailActivity : ThemedActivity() {
     private var episodesAdapter: CardAdapter? = null
 
     private var versionIndex = 0
+    private lateinit var fileInfo: FileInfoSection
     private var firstLoad = true
 
     /** “查看全部”选完季回来：切换到该季，焦点放在它的标签上 */
@@ -95,6 +97,7 @@ class DetailActivity : ThemedActivity() {
         binding = ActivityDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.posterFrame.clipToRoundedBackground()
+        fileInfo = FileInfoSection(binding.fileInfoTitle, binding.fileInfo, LumyApp.instance.settings.detailShowFileInfo)
         // 标签很短，用普通布局：焦点移动时整行不滚动，不会左右闪动
         binding.seasons.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
         binding.summary.setOnClickListener {
@@ -159,7 +162,7 @@ class DetailActivity : ThemedActivity() {
     /** 背景、海报：剧页面始终用剧的图，切换剧集时不跳动 */
     private fun renderStatic(d: MediaDetail) {
         val dm = resources.displayMetrics
-        d.item.backdrop?.let { binding.backdrop.load(server.imageUrl(it, dm.widthPixels, dm.heightPixels)) }
+        d.item.backdrop?.let { lifecycleScope.launch { Backdrop.showAsWindowBackground(this@DetailActivity, server.imageUrl(it, dm.widthPixels, dm.heightPixels)) } }
         val lp = binding.posterFrame.layoutParams
         d.item.poster?.let { binding.poster.load(server.imageUrl(it, lp.width, lp.height)) }
     }
@@ -228,6 +231,7 @@ class DetailActivity : ThemedActivity() {
         val versions = d?.versions.orEmpty()
         versionIndex = versionIndex.coerceIn(0, (versions.size - 1).coerceAtLeast(0))
         renderBadges(versions.getOrNull(versionIndex))
+        fileInfo.render(versions.getOrNull(versionIndex))
         renderActions(item, d)
     }
 
@@ -291,6 +295,7 @@ class DetailActivity : ThemedActivity() {
         OptionsPanel(this, getString(R.string.version_title), options) { i ->
             versionIndex = i
             renderBadges(d.versions[i])
+            fileInfo.render(d.versions[i])
         }.show()
     }
 
@@ -468,13 +473,15 @@ class DetailActivity : ThemedActivity() {
     // ---- 演员、更多类似 ----
 
     private fun renderExtras(d: MediaDetail) {
-        if (d.people.isNotEmpty()) {
+        val settings = LumyApp.instance.settings
+        if (settings.detailShowCast && d.people.isNotEmpty()) {
             binding.castTitle.visibility = View.VISIBLE
             binding.cast.visibility = View.VISIBLE
             binding.cast.adapter = CardAdapter(server, HubStyle.PERSON, onFocused = {}, onClick = { Navigator.open(this, it, d.libraryId) })
                 .also { it.submit(d.people.take(MAX_PEOPLE)) }
         }
-        if (d.item.type != MediaType.MOVIE && d.item.type != MediaType.SHOW) return
+        // 关闭时连请求都不发
+        if (!settings.detailShowSimilar || (d.item.type != MediaType.MOVIE && d.item.type != MediaType.SHOW)) return
         lifecycleScope.launch {
             val similar = attempt { server.similar(d.item.id) }.getOrDefault(emptyList())
             if (similar.isEmpty()) return@launch

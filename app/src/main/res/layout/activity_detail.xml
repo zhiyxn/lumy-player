@@ -3,23 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageView
-        android:id="@+id/backdrop"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:alpha="0.6"
-        android:importantForAccessibility="no"
-        android:scaleType="centerCrop" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/scrim_left" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/scrim_bottom" />
+    <!-- 背景图和渐变遮罩合成后作为窗口背景，见 Backdrop -->
 
     <ScrollView
         android:id="@+id/scroll"
@@ -144,7 +128,8 @@
                         android:layout_marginTop="8dp"
                         android:maxLines="1" />
 
-                    <LinearLayout
+                    <!-- 从简介或下面的行移进来时回到上次停留的按钮 -->
+                    <com.hesier.lumy.ui.widget.FocusMemoryLinearLayout
                         android:id="@+id/actions"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -222,6 +207,30 @@
                 android:paddingTop="12dp"
                 android:paddingEnd="@dimen/screen_padding_h"
                 android:paddingBottom="8dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/file_info_title"
+                style="@style/Text.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="64dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/detail_file_info"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
+            <!-- 文件、视频、每条音轨、字幕（多条一张）各一张卡片，左右切换 -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/file_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="64dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="@dimen/screen_padding_h"
+                android:paddingBottom="12dp"
                 android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
