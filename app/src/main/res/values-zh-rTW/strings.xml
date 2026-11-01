@@ -25,9 +25,13 @@
     <string name="kind_plex_detail">使用 plex.tv 帳號登入，自動找到帳號下的伺服器</string>
     <string name="kind_jellyfin_detail">輸入伺服器位址、使用者名稱和密碼</string>
     <string name="kind_emby_detail">輸入伺服器位址、使用者名稱和密碼</string>
+    <string name="kind_fnos">飛牛影視</string>
+    <string name="kind_fnos_detail">使用影視獨立帳號登入（非 NAS 帳號）</string>
+    <string name="direct_login_fnos_hint">請輸入影視獨立帳號。只填 IP 時自動補上 http 和連接埠 8005</string>
+    <string name="direct_login_fnos_address_hint">例如 192.168.1.10:8005</string>
 
     <string name="direct_login_title">連線至 %1$s 伺服器</string>
-    <string name="direct_login_hint">在伺服器的控制台或網頁版可以看到它的位址。只填 IP 時預設使用 http 和連接埠 8096</string>
+    <string name="direct_login_hint">只填 IP 時自動補上 http 和連接埠 8096</string>
     <string name="direct_login_address">伺服器位址</string>
     <string name="direct_login_address_hint">例如 192.168.1.10:8096</string>
     <string name="direct_login_username">使用者名稱</string>
@@ -52,6 +56,8 @@
 
     <string name="settings_title">設定</string>
     <string name="settings_section_playback">播放</string>
+    <string name="settings_section_audio">音訊</string>
+    <string name="settings_section_compatibility">相容性</string>
     <string name="settings_section_subtitles">字幕</string>
     <string name="settings_section_display">介面</string>
     <string name="settings_language">語言</string>
@@ -85,14 +91,13 @@
     <string name="settings_subtitle_position">字幕位置</string>
     <string name="settings_subtitle_position_detail">看寬銀幕電影時選「靠下」，字幕顯示在下方黑邊裡，不擋畫面</string>
     <string name="settings_subtitle_background">字幕背景</string>
-    <string name="settings_subtitle_background_detail">字幕下面加半透明黑底，明亮的畫面上更容易看清</string>
-    <string name="settings_subtitle_style_note">位置和背景只對 SRT 等文字字幕有效，ASS 特效字幕和圖片字幕按原樣顯示</string>
+    <string name="settings_subtitle_background_detail">文字字幕加半透明黑底；位置和背景不影響 ASS、圖片字幕。</string>
     <string name="subtitle_position_low">靠下</string>
     <string name="subtitle_position_normal">標準</string>
     <string name="subtitle_position_high">偏高</string>
     <string name="subtitle_position_higher">更高</string>
     <string name="settings_allow_software_video_decoding">允許影片軟體解碼</string>
-    <string name="settings_allow_software_video_decoding_detail">硬體解碼無法使用時，嘗試以軟體解碼播放 1080p 及以下的 H.264 / RV40 SDR 影片。能否流暢播放取決於裝置、影片編碼和影格率；不影響音訊解碼</string>
+    <string name="settings_allow_software_video_decoding_detail">硬解不可用時軟解 ≤1080p H.264 / RV40 SDR，流暢度視裝置而定。</string>
     <string name="settings_video_scale">預設畫面比例</string>
     <string name="settings_video_scale_detail">播放時可以在「更多」裡臨時切換。裁切會切掉畫面邊緣，拉伸會讓畫面變形</string>
     <string name="video_scale">畫面比例</string>
@@ -100,13 +105,11 @@
     <string name="video_scale_zoom">裁切填滿</string>
     <string name="video_scale_fill">拉伸全螢幕</string>
     <string name="settings_audio_language">偏好音軌語言</string>
-    <string name="settings_audio_language_detail">優先選擇這種語言的音軌；手動切換過的檔案和影集依手動的選擇</string>
+    <string name="settings_audio_language_detail">優先選擇這種語言的音軌；啟用音軌記憶時，手動選擇優先。</string>
     <string name="settings_subtitle_mode">預設字幕</string>
-    <string name="settings_subtitle_mode_detail">手動切換過的檔案和影集依手動的選擇</string>
+    <string name="settings_subtitle_mode_detail">啟用字幕記憶時，手動選擇的主字幕優先。</string>
     <string name="settings_subtitle_language">偏好字幕語言</string>
     <string name="settings_subtitle_language_detail">預設字幕為「偏好語言」或「僅強制字幕」時使用，簡繁依字幕標題區分</string>
-    <string name="settings_clear_track_memory">清除記住的音軌和字幕</string>
-    <string name="settings_clear_track_memory_detail">忘掉各個檔案、各部影集手動選過的音軌和字幕，之後依上面的設定選擇</string>
     <string name="track_memory_cleared">已清除</string>
     <string name="follow_server">跟隨伺服器</string>
     <string name="subtitle_mode_language">偏好語言</string>
@@ -120,7 +123,7 @@
     <string name="lang_japanese">日語</string>
     <string name="lang_korean">韓語</string>
     <string name="settings_add_server">新增伺服器</string>
-    <string name="settings_add_server_detail">支援 Plex、Jellyfin、Emby，可以同時新增多台</string>
+    <string name="settings_add_server_detail">支援 Plex、Jellyfin、Emby 與飛牛影視，可以同時新增多台</string>
     <string name="server_current">目前</string>
     <string name="server_switch">切換到這台伺服器</string>
     <string name="server_repick">重新選擇 Plex 伺服器</string>
@@ -156,6 +159,7 @@
     <string name="skip_off">關閉</string>
     <string name="skip_button">顯示跳過按鈕</string>
     <string name="skip_auto">自動跳過</string>
+    <string name="subtitle_size_xsmall">更小</string>
     <string name="subtitle_size_small">小</string>
     <string name="subtitle_size_normal">標準</string>
     <string name="subtitle_size_large">大</string>
@@ -234,7 +238,7 @@
     <string name="info_show">顯示播放資訊</string>
     <string name="info_hide">隱藏播放資訊</string>
     <string name="settings_frame_rate">自動切換更新率</string>
-    <string name="settings_frame_rate_detail">依片源影格率切換輸出更新率（如 24p → 24Hz），畫面更流暢。需要電視/投影機支援多種更新率，切換時可能黑屏一兩秒</string>
+    <string name="settings_frame_rate_detail">配合片源影格率，需裝置支援；切換時可能短暫黑屏。</string>
     <string name="settings_audio_delay">音訊延遲</string>
     <string name="settings_audio_delay_detail">藍牙喇叭或擴大機有延遲時調整，對所有影片有效</string>
     <string name="cancel">取消</string>
@@ -281,9 +285,9 @@
     <string name="settings_allow_transcode">允許伺服器轉碼</string>
     <string name="settings_allow_transcode_detail">關閉後只直接播放；裝置不支援的影片會顯示錯誤，不會占用伺服器</string>
     <string name="settings_display_hdr">電視支援 HDR</string>
-    <string name="settings_display_hdr_detail">關閉後 HDR / 杜比視界片源由伺服器轉碼成 1080p SDR，避免在不支援 HDR 的電視上畫面發灰。需要允許伺服器轉碼，並在伺服器上開啟 HDR 色調對應</string>
+    <string name="settings_display_hdr_detail">關閉後轉為 1080p SDR；需允許轉碼並開啟伺服器色調對應。</string>
     <string name="settings_allow_burn">允許伺服器燒入字幕</string>
-    <string name="settings_allow_burn_detail">為了顯示字幕而讓伺服器轉碼並燒入。預設關閉：字幕盡量在本機算繪（含 ASS 特效字幕）。影片已經在轉碼時，Plex 上本機顯示不了的字幕一律燒入；Emby / Jellyfin 會把內嵌字幕隨轉碼一起傳給本機算繪，不必燒入</string>
+    <string name="settings_allow_burn_detail">允許為字幕轉碼燒入；Plex 轉碼時，不支援的字幕仍會燒入。</string>
     <string name="player_error">播放失敗：%1$s</string>
     <string name="player_back_again_exit">再按一次返回鍵結束播放</string>
     <string name="player_fallback">裝置無法直接播放，已切換到伺服器轉碼</string>
@@ -340,14 +344,15 @@
 
     <!-- Phone input -->
     <string name="phone_input_title">手機掃碼輸入</string>
-    <string name="phone_input_hint">手機與電視連上同一區域網路後掃碼，五分鐘內有效，僅可傳送一次。區域網路連線使用 HTTP，請在可信任的網路操作。無法開啟時請關閉手機 VPN，或檢查路由器的裝置隔離設定。</string>
-    <string name="phone_input_web_hint">填寫 Jellyfin / Emby 伺服器資訊，傳送後請在電視上確認連線。資訊透過區域網路 HTTP 直接傳送到電視，請在可信任的網路操作。</string>
+    <string name="phone_input_hint">同一區域網路掃碼填寫，5 分鐘內有效。請在可信任的網路操作。</string>
+    <string name="phone_input_web_hint">傳送後於電視上確認連線，請在可信任的區域網路使用。</string>
+    <string name="phone_input_refresh">重新產生 QR Code</string>
     <string name="phone_input_send">傳送到電視</string>
     <string name="phone_input_sent">已傳送，請在電視上選擇「連線」完成登入。</string>
     <string name="phone_input_received">已收到手機輸入，請檢查資訊後選擇「連線」。</string>
     <string name="phone_input_web_error">傳送失敗，請檢查位址與使用者名稱。若電視視窗已關閉或 QR Code 過期，請重新掃碼；若電視已顯示填寫內容，請直接在電視確認。</string>
-    <string name="phone_input_expired">QR Code 已失效，請關閉此視窗後重新開啟。</string>
-    <string name="phone_input_unavailable">無法啟動手機輸入，請檢查電視的區域網路連線後重新開啟。</string>
+    <string name="phone_input_expired">QR Code 已過期，請重新產生。</string>
+    <string name="phone_input_unavailable">手機輸入暫時無法使用，請檢查電視網路後重新產生 QR Code。</string>
     <string name="update_check">檢查更新</string>
     <string name="update_check_detail">從 GitHub 下載新版本並開啟系統安裝畫面</string>
     <string name="update_checking">正在檢查…</string>
@@ -373,4 +378,28 @@
     <string name="update_checksum_failed">下載的檔案不完整或已損毀，請重試，或換一個下載鏡像。</string>
     <string name="update_allow_install">請在剛開啟的設定裡允許 Lumy 安裝應用程式，返回後再選擇「安裝」。</string>
     <string name="update_install_unavailable">這台裝置不支援從應用程式內安裝更新。請從 %1$s 下載新版本後手動安裝。</string>
+    <string name="player_secondary_subtitles">副字幕</string>
+    <string name="player_secondary_subtitle_style">副字幕樣式</string>
+    <string name="subtitle_text_color">文字顏色</string>
+    <string name="subtitle_color_white">白色</string>
+    <string name="subtitle_color_yellow">黃色</string>
+    <string name="subtitle_color_gray">淺灰色</string>
+    <string name="secondary_subtitle_size_percent">主字幕字級的 %1$d%%</string>
+    <string name="settings_remember_audio">記住手動音軌選擇</string>
+    <string name="settings_remember_audio_detail">記住各檔案的音軌及各部影集的語言。關閉後不讀取、不更新記憶，既有紀錄保留。</string>
+    <string name="settings_remember_subtitles">記住手動字幕選擇</string>
+    <string name="settings_remember_subtitles_detail">記住各檔案、各部影集的主字幕選擇（含關閉）；停用保留紀錄。</string>
+    <string name="settings_clear_audio_memory">清除音軌記憶</string>
+    <string name="settings_clear_audio_memory_detail">清除本機所有檔案和影集的音軌記憶，保留字幕記憶與記憶開關狀態。</string>
+    <string name="settings_clear_subtitle_memory">清除字幕記憶</string>
+    <string name="settings_clear_subtitle_memory_detail">清除本機所有檔案和影集的主字幕記憶，保留音軌記憶與記憶開關狀態。</string>
+    <string name="settings_seek_forward">快轉時長</string>
+    <string name="settings_seek_back">倒轉時長</string>
+    <string name="settings_progress_time">進度條右側時間</string>
+    <string name="progress_time_total">影片總時長</string>
+    <string name="progress_time_remaining">剩餘時長</string>
+    <string name="settings_hold_speed">長按倍速</string>
+    <string name="settings_hold_speed_detail">控制列隱藏時長按確認鍵倍速，放開恢復原速。音軌直通時無法使用。</string>
+    <string name="playback_speed_value">%1$s×</string>
+    <string name="player_hold_speed">%1$s× · 放開確認鍵恢復原速</string>
 </resources>

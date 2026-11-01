@@ -135,10 +135,12 @@ class SettingsActivity : ThemedActivity() {
     }
 
     private fun render() {
-        val subtitleLabels = listOf(R.string.subtitle_size_small, R.string.subtitle_size_normal, R.string.subtitle_size_large, R.string.subtitle_size_xlarge)
+        val subtitleLabels = listOf(R.string.subtitle_size_xsmall, R.string.subtitle_size_small, R.string.subtitle_size_normal,
+            R.string.subtitle_size_large, R.string.subtitle_size_xlarge)
             .map(::getString)
-        // 找不到（旧版本存的值）时显示“标准”；不能用 coerceAtLeast(1)，那样“小”（下标 0）也会变成“标准”
-        val scaleIndex = Settings.SUBTITLE_SCALES.indexOf(settings.subtitleScale).takeIf { it >= 0 } ?: 1
+        // Fall back by scale value so adding presets never changes the default label.
+        val scaleIndex = Settings.SUBTITLE_SCALES.indexOf(settings.subtitleScale).takeIf { it >= 0 }
+            ?: Settings.SUBTITLE_SCALES.indexOf(1f)
         val positionLabels = listOf(R.string.subtitle_position_low, R.string.subtitle_position_normal, R.string.subtitle_position_high, R.string.subtitle_position_higher)
             .map(::getString)
         sections = listOf(
@@ -189,32 +191,49 @@ class SettingsActivity : ThemedActivity() {
             Row(getString(R.string.settings_default_quality), qualityLabel(this, Quality.presets[settings.defaultQuality.coerceIn(0, Quality.presets.lastIndex)])) {
                 choose(R.string.settings_default_quality, Quality.presets.map { qualityLabel(this, it) }, settings.defaultQuality) { settings.defaultQuality = it }
             },
-            Row(getString(R.string.settings_passthrough), onOff(settings.passthrough), getString(R.string.settings_passthrough_detail)) {
-                settings.passthrough = !settings.passthrough
-                render()
-            },
-            Row(getString(R.string.settings_allow_transcode), onOff(settings.allowTranscode), getString(R.string.settings_allow_transcode_detail)) {
-                settings.allowTranscode = !settings.allowTranscode
-                render()
-            },
-            Row(getString(R.string.settings_allow_software_video_decoding), onOff(settings.allowSoftwareVideoDecoding), getString(R.string.settings_allow_software_video_decoding_detail)) {
-                settings.allowSoftwareVideoDecoding = !settings.allowSoftwareVideoDecoding
-                render()
-            },
-            Row(getString(R.string.settings_display_hdr), onOff(settings.displaySupportsHdr), getString(R.string.settings_display_hdr_detail)) {
-                settings.displaySupportsHdr = !settings.displaySupportsHdr
-                render()
-            },
-            Row(getString(R.string.settings_allow_burn), onOff(settings.allowSubtitleBurn), getString(R.string.settings_allow_burn_detail)) {
-                settings.allowSubtitleBurn = !settings.allowSubtitleBurn
-                render()
-            },
             Row(getString(R.string.settings_video_scale), videoScaleLabel(this, settings.videoScale), getString(R.string.settings_video_scale_detail)) {
                 val scales = VideoScale.entries
                 choose(R.string.settings_video_scale, scales.map { videoScaleLabel(this, it) }, scales.indexOf(settings.videoScale)) { settings.videoScale = scales[it] }
             },
             Row(getString(R.string.settings_frame_rate), onOff(settings.matchFrameRate), getString(R.string.settings_frame_rate_detail)) {
                 settings.matchFrameRate = !settings.matchFrameRate
+                render()
+            },
+            Row(getString(R.string.settings_seek_forward), getString(R.string.skip_seconds, settings.seekForwardSeconds)) {
+                choose(R.string.settings_seek_forward, Settings.SEEK_INTERVALS.map { getString(R.string.skip_seconds, it) },
+                    Settings.SEEK_INTERVALS.indexOf(settings.seekForwardSeconds)) { settings.seekForwardSeconds = Settings.SEEK_INTERVALS[it] }
+            },
+            Row(getString(R.string.settings_seek_back), getString(R.string.skip_seconds, settings.seekBackSeconds)) {
+                choose(R.string.settings_seek_back, Settings.SEEK_INTERVALS.map { getString(R.string.skip_seconds, it) },
+                    Settings.SEEK_INTERVALS.indexOf(settings.seekBackSeconds)) { settings.seekBackSeconds = Settings.SEEK_INTERVALS[it] }
+            },
+            Row(getString(R.string.settings_hold_speed), getString(R.string.playback_speed_value, settings.holdSpeed.toString()),
+                getString(R.string.settings_hold_speed_detail)) {
+                choose(R.string.settings_hold_speed,
+                    Settings.HOLD_SPEEDS.map { getString(R.string.playback_speed_value, it.toString()) },
+                    Settings.HOLD_SPEEDS.indexOf(settings.holdSpeed)) { settings.holdSpeed = Settings.HOLD_SPEEDS[it] }
+            },
+            Row(getString(R.string.settings_progress_time), getString(
+                if (settings.showRemainingTime) R.string.progress_time_remaining else R.string.progress_time_total,
+            )) {
+                choose(R.string.settings_progress_time,
+                    listOf(getString(R.string.progress_time_total), getString(R.string.progress_time_remaining)),
+                    if (settings.showRemainingTime) 1 else 0) { settings.showRemainingTime = it == 1 }
+            },
+            Row(getString(R.string.settings_auto_next), onOff(settings.autoPlayNext)) {
+                settings.autoPlayNext = !settings.autoPlayNext
+                render()
+            },
+            Row(getString(R.string.settings_skip_intro), skipLabel(settings.skipIntro)) {
+                chooseSkip(R.string.settings_skip_intro, settings.skipIntro) { settings.skipIntro = it }
+            },
+            Row(getString(R.string.settings_skip_credits), skipLabel(settings.skipCredits)) {
+                chooseSkip(R.string.settings_skip_credits, settings.skipCredits) { settings.skipCredits = it }
+            },
+            ),
+            listOf(
+            Row(getString(R.string.settings_passthrough), onOff(settings.passthrough), getString(R.string.settings_passthrough_detail)) {
+                settings.passthrough = !settings.passthrough
                 render()
             },
             Row(getString(R.string.settings_audio_delay), formatDelay(this, settings.audioDelayMs), getString(R.string.settings_audio_delay_detail)) {
@@ -229,15 +248,13 @@ class SettingsActivity : ThemedActivity() {
                     settings.audioLanguage = codes[it]
                 }
             },
-            Row(getString(R.string.settings_auto_next), onOff(settings.autoPlayNext)) {
-                settings.autoPlayNext = !settings.autoPlayNext
+            Row(getString(R.string.settings_remember_audio), onOff(settings.rememberAudioSelection), getString(R.string.settings_remember_audio_detail)) {
+                settings.rememberAudioSelection = !settings.rememberAudioSelection
                 render()
             },
-            Row(getString(R.string.settings_skip_intro), skipLabel(settings.skipIntro)) {
-                chooseSkip(R.string.settings_skip_intro, settings.skipIntro) { settings.skipIntro = it }
-            },
-            Row(getString(R.string.settings_skip_credits), skipLabel(settings.skipCredits)) {
-                chooseSkip(R.string.settings_skip_credits, settings.skipCredits) { settings.skipCredits = it }
+            Row(getString(R.string.settings_clear_audio_memory), "", getString(R.string.settings_clear_audio_memory_detail)) {
+                app.trackMemory.clearAudio()
+                Toast.makeText(this, R.string.track_memory_cleared, Toast.LENGTH_SHORT).show()
             },
             ),
             listOf(
@@ -249,7 +266,7 @@ class SettingsActivity : ThemedActivity() {
             },
             Row(
                 getString(R.string.settings_subtitle_background), onOff(settings.subtitleBackground),
-                getString(R.string.settings_subtitle_background_detail) + "\n" + getString(R.string.settings_subtitle_style_note),
+                getString(R.string.settings_subtitle_background_detail),
             ) {
                 settings.subtitleBackground = !settings.subtitleBackground
                 render()
@@ -264,9 +281,31 @@ class SettingsActivity : ThemedActivity() {
                     settings.subtitleLanguage = codes[it]
                 }
             },
-            Row(getString(R.string.settings_clear_track_memory), "", getString(R.string.settings_clear_track_memory_detail)) {
-                app.trackMemory.clear()
+            Row(getString(R.string.settings_allow_burn), onOff(settings.allowSubtitleBurn), getString(R.string.settings_allow_burn_detail)) {
+                settings.allowSubtitleBurn = !settings.allowSubtitleBurn
+                render()
+            },
+            Row(getString(R.string.settings_remember_subtitles), onOff(settings.rememberSubtitleSelection), getString(R.string.settings_remember_subtitles_detail)) {
+                settings.rememberSubtitleSelection = !settings.rememberSubtitleSelection
+                render()
+            },
+            Row(getString(R.string.settings_clear_subtitle_memory), "", getString(R.string.settings_clear_subtitle_memory_detail)) {
+                app.trackMemory.clearSubtitles()
                 Toast.makeText(this, R.string.track_memory_cleared, Toast.LENGTH_SHORT).show()
+            },
+            ),
+            listOf(
+            Row(getString(R.string.settings_allow_transcode), onOff(settings.allowTranscode), getString(R.string.settings_allow_transcode_detail)) {
+                settings.allowTranscode = !settings.allowTranscode
+                render()
+            },
+            Row(getString(R.string.settings_allow_software_video_decoding), onOff(settings.allowSoftwareVideoDecoding), getString(R.string.settings_allow_software_video_decoding_detail)) {
+                settings.allowSoftwareVideoDecoding = !settings.allowSoftwareVideoDecoding
+                render()
+            },
+            Row(getString(R.string.settings_display_hdr), onOff(settings.displaySupportsHdr), getString(R.string.settings_display_hdr_detail)) {
+                settings.displaySupportsHdr = !settings.displaySupportsHdr
+                render()
             },
             ),
             serverRows() + Row(getString(R.string.settings_add_server), "", getString(R.string.settings_add_server_detail)) {
@@ -548,7 +587,9 @@ class SettingsActivity : ThemedActivity() {
         val CATEGORIES = listOf(
             R.string.settings_section_display,
             R.string.settings_section_playback,
+            R.string.settings_section_audio,
             R.string.settings_section_subtitles,
+            R.string.settings_section_compatibility,
             R.string.settings_section_servers,
             R.string.settings_section_about,
         )

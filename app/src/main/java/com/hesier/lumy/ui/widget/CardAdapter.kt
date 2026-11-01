@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.hesier.lumy.core.HubStyle
@@ -16,6 +17,7 @@ import com.hesier.lumy.R
 import com.hesier.lumy.ui.cardSubtitle
 import com.hesier.lumy.ui.cardTitle
 import com.hesier.lumy.ui.landscapeSubtitle
+import com.hesier.lumy.ui.formatClock
 import coil.dispose
 import coil.load
 
@@ -54,9 +56,20 @@ class CardAdapter(
     fun indexOf(id: String): Int = items.indexOfFirst { it?.id == id }
 
     fun submit(list: List<MediaItem>) {
+        if (items == list) return
+        val oldItems = items.toList()
+        val diff = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize() = oldItems.size
+            override fun getNewListSize() = list.size
+            override fun areItemsTheSame(oldPosition: Int, newPosition: Int) =
+                oldItems[oldPosition]?.id == list[newPosition].id
+            override fun areContentsTheSame(oldPosition: Int, newPosition: Int) =
+                oldItems[oldPosition] == list[newPosition]
+        })
         items.clear()
         items.addAll(list)
-        notifyDataSetChanged()
+        // Keep unchanged card views and their focus/scale when a hub refreshes.
+        diff.dispatchUpdatesTo(this)
     }
 
     fun resize(total: Int) {
@@ -121,6 +134,7 @@ class CardAdapter(
         private val corner: View = view.findViewById(R.id.unwatched_corner)
         private val badge: TextView = view.findViewById(R.id.badge)
         private val progress: ProgressLine = view.findViewById(R.id.progress)
+        private val playbackPosition: TextView? = view.findViewById(R.id.playback_position)
         private var item: MediaItem? = null
 
         /**
@@ -166,6 +180,8 @@ class CardAdapter(
                 corner.visibility = View.GONE
                 badge.visibility = View.GONE
                 progress.visibility = View.GONE
+                playbackPosition?.text = null
+                playbackPosition?.visibility = View.GONE
                 return
             }
             val ctx = itemView.context
@@ -195,6 +211,11 @@ class CardAdapter(
                 if (unwatchedEpisodes == null && !item.watched && inProgress == null && item.type == MediaType.MOVIE) View.VISIBLE else View.GONE
             progress.visibility = if (inProgress != null) View.VISIBLE else View.GONE
             progress.progress = inProgress ?: 0f
+            val position = item.viewOffsetMs?.takeIf {
+                it > 0 && (item.type == MediaType.MOVIE || item.type == MediaType.EPISODE)
+            }
+            playbackPosition?.text = position?.let(::formatClock)
+            playbackPosition?.visibility = if (position != null) View.VISIBLE else View.GONE
         }
     }
 }

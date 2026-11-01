@@ -38,9 +38,13 @@
     <string name="kind_plex_detail">Sign in with your plex.tv account to find its servers automatically</string>
     <string name="kind_jellyfin_detail">Enter the server address, username and password</string>
     <string name="kind_emby_detail">Enter the server address, username and password</string>
+    <string name="kind_fnos">fnOS Media</string>
+    <string name="kind_fnos_detail">Use your separate fnOS Media account (not your NAS account)</string>
+    <string name="direct_login_fnos_hint">Enter your media account. If you only enter an IP, http and port 8005 are added automatically</string>
+    <string name="direct_login_fnos_address_hint">e.g. 192.168.1.10:8005</string>
 
     <string name="direct_login_title">Connect to a %1$s server</string>
-    <string name="direct_login_hint">The address is shown in the server\'s dashboard or web app. If you only enter an IP, http and port 8096 are used</string>
+    <string name="direct_login_hint">If you only enter an IP, http and port 8096 are added automatically</string>
     <string name="direct_login_address">Server address</string>
     <string name="direct_login_address_hint">e.g. 192.168.1.10:8096</string>
     <string name="direct_login_username">Username</string>
@@ -65,6 +69,8 @@
 
     <string name="settings_title">Settings</string>
     <string name="settings_section_playback">Playback</string>
+    <string name="settings_section_audio">Audio</string>
+    <string name="settings_section_compatibility">Compatibility</string>
     <string name="settings_section_subtitles">Subtitles</string>
     <string name="settings_section_display">Interface</string>
     <string name="settings_language">Language</string>
@@ -90,7 +96,7 @@
     <string name="settings_section_about">About</string>
     <string name="settings_default_quality">Default quality</string>
     <string name="settings_allow_software_video_decoding">Allow software video decoding</string>
-    <string name="settings_allow_software_video_decoding_detail">Try software decoding for H.264 / RV40 SDR videos up to 1080p when hardware decoding is unavailable. Playback may stutter depending on the device, video codec and frame rate. Audio decoding is unaffected</string>
+    <string name="settings_allow_software_video_decoding_detail">Software decode ≤1080p H.264 / RV40 SDR if hardware is unavailable; smoothness varies by device.</string>
     <string name="settings_passthrough">Audio passthrough</string>
     <string name="settings_passthrough_detail">Turn on when using an AV receiver so it decodes Dolby/DTS audio. Speed can\'t be changed while a track is passed through</string>
     <string name="settings_auto_next">Autoplay next episode</string>
@@ -100,8 +106,7 @@
     <string name="settings_subtitle_position">Subtitle position</string>
     <string name="settings_subtitle_position_detail">For widescreen films, choose Low to show subtitles in the black bar below the picture</string>
     <string name="settings_subtitle_background">Subtitle background</string>
-    <string name="settings_subtitle_background_detail">Adds a translucent black box behind subtitles so they\'re easier to read on bright scenes</string>
-    <string name="settings_subtitle_style_note">Position and background only apply to text subtitles such as SRT. ASS and image subtitles are shown as authored</string>
+    <string name="settings_subtitle_background_detail">Dark text subtitle background; position/background do not affect ASS or image subtitles.</string>
     <string name="subtitle_position_low">Low</string>
     <string name="subtitle_position_normal">Normal</string>
     <string name="subtitle_position_high">High</string>
@@ -113,13 +118,11 @@
     <string name="video_scale_zoom">Zoom</string>
     <string name="video_scale_fill">Stretch</string>
     <string name="settings_audio_language">Preferred audio language</string>
-    <string name="settings_audio_language_detail">Tracks in this language are preferred. Files and shows where you picked a track manually keep your choice</string>
+    <string name="settings_audio_language_detail">Prefer this language. Manual choices take priority when audio memory is enabled.</string>
     <string name="settings_subtitle_mode">Default subtitles</string>
-    <string name="settings_subtitle_mode_detail">Files and shows where you picked subtitles manually keep your choice</string>
+    <string name="settings_subtitle_mode_detail">Manual primary subtitle choices take priority when subtitle memory is enabled.</string>
     <string name="settings_subtitle_language">Preferred subtitle language</string>
     <string name="settings_subtitle_language_detail">Used when Default subtitles is Preferred language or Forced only. Simplified and Traditional Chinese are told apart by the subtitle title</string>
-    <string name="settings_clear_track_memory">Clear remembered tracks</string>
-    <string name="settings_clear_track_memory_detail">Forget the audio and subtitle tracks picked manually for each file and show, and use the settings above instead</string>
     <string name="track_memory_cleared">Cleared</string>
     <string name="follow_server">Server default</string>
     <string name="subtitle_mode_language">Preferred language</string>
@@ -133,7 +136,7 @@
     <string name="lang_japanese">Japanese</string>
     <string name="lang_korean">Korean</string>
     <string name="settings_add_server">Add server</string>
-    <string name="settings_add_server_detail">Plex, Jellyfin and Emby are supported, and you can add several</string>
+    <string name="settings_add_server_detail">Plex, Jellyfin, Emby and fnOS Media are supported; add multiple servers</string>
     <string name="server_current">Current</string>
     <string name="server_switch">Switch to this server</string>
     <string name="server_repick">Choose another Plex server</string>
@@ -169,6 +172,7 @@
     <string name="skip_off">Off</string>
     <string name="skip_button">Show skip button</string>
     <string name="skip_auto">Skip automatically</string>
+    <string name="subtitle_size_xsmall">Extra small</string>
     <string name="subtitle_size_small">Small</string>
     <string name="subtitle_size_normal">Normal</string>
     <string name="subtitle_size_large">Large</string>
@@ -247,7 +251,7 @@
     <string name="info_show">Show playback info</string>
     <string name="info_hide">Hide playback info</string>
     <string name="settings_frame_rate">Match refresh rate</string>
-    <string name="settings_frame_rate_detail">Switches the TV to the video\'s frame rate (e.g. 24p → 24Hz) for smoother motion. Needs a TV that supports it; the screen may go black for a second</string>
+    <string name="settings_frame_rate_detail">Match video frame rate; requires display support. Switching may briefly blank the screen.</string>
     <string name="settings_audio_delay">Audio delay</string>
     <string name="settings_audio_delay_detail">Adjust when a Bluetooth speaker or AV receiver lags. Applies to all videos</string>
     <string name="cancel">Cancel</string>
@@ -294,9 +298,9 @@
     <string name="settings_allow_transcode">Allow server transcoding</string>
     <string name="settings_allow_transcode_detail">When off, only Direct Play is used. Videos this device can\'t play show an error instead of loading the server</string>
     <string name="settings_display_hdr">TV supports HDR</string>
-    <string name="settings_display_hdr_detail">When off, the server converts HDR and Dolby Vision to 1080p SDR to avoid a washed-out picture. Needs transcoding allowed and HDR tone mapping on the server</string>
+    <string name="settings_display_hdr_detail">When off, convert to 1080p SDR. Requires transcoding and server tone mapping.</string>
     <string name="settings_allow_burn">Allow server subtitle burn-in</string>
-    <string name="settings_allow_burn_detail">Off by default: subtitles are rendered on this device when possible, including ASS. On Plex, ones it can\'t show are always burned in when the video is re-encoded anyway; Emby and Jellyfin send embedded subtitles along with the transcode for this device to render</string>
+    <string name="settings_allow_burn_detail">Allow subtitle burn-in; Plex also burns unsupported subtitles during video transcoding.</string>
     <string name="player_error">Playback failed: %1$s</string>
     <string name="player_back_again_exit">Press Back again to exit</string>
     <string name="player_fallback">This device can\'t play the file directly. Switched to server transcoding</string>
@@ -356,14 +360,15 @@
 
     <!-- Phone input -->
     <string name="phone_input_title">Enter with phone</string>
-    <string name="phone_input_hint">Scan with your phone on the same LAN. Valid for 5 minutes, once only. Use a trusted network: this local connection uses HTTP. If it cannot open, turn off the phone VPN or check Wi-Fi client isolation.</string>
-    <string name="phone_input_web_hint">Enter your Jellyfin / Emby server details, then confirm Connect on your TV. Details are sent directly to your TV over local HTTP. Use a trusted network.</string>
+    <string name="phone_input_hint">Scan on the same LAN. Valid for 5 minutes. Use a trusted network.</string>
+    <string name="phone_input_web_hint">Send the details, then select Connect on your TV. Use a trusted LAN.</string>
+    <string name="phone_input_refresh">Refresh code</string>
     <string name="phone_input_send">Send to TV</string>
     <string name="phone_input_sent">Sent. Select Connect on your TV to sign in.</string>
     <string name="phone_input_received">Received from phone. Check the details and select Connect.</string>
     <string name="phone_input_web_error">Could not send. Check the address and username. If the TV dialog was closed or the code expired, scan a new code. If it already shows your details, confirm on the TV.</string>
-    <string name="phone_input_expired">Code expired. Close this dialog and open it again for a new code.</string>
-    <string name="phone_input_unavailable">Cannot start phone input. Check the TV LAN connection, then reopen this dialog.</string>
+    <string name="phone_input_expired">Code expired. Select Refresh code to try again.</string>
+    <string name="phone_input_unavailable">Cannot start phone input. Check the TV network, then refresh the code.</string>
     <string name="update_check">Check for updates</string>
     <string name="update_check_detail">Download the new version from GitHub and open the system installer</string>
     <string name="update_checking">Checking…</string>
@@ -389,4 +394,28 @@
     <string name="update_checksum_failed">The downloaded file is incomplete or damaged. Try again, or use a different download mirror.</string>
     <string name="update_allow_install">Allow Lumy to install apps in the settings that just opened, then come back and select Install.</string>
     <string name="update_install_unavailable">This device cannot install updates from inside the app. Download the new version from %1$s and install it manually.</string>
+    <string name="player_secondary_subtitles">Secondary subtitles</string>
+    <string name="player_secondary_subtitle_style">Secondary subtitle style</string>
+    <string name="subtitle_text_color">Text color</string>
+    <string name="subtitle_color_white">White</string>
+    <string name="subtitle_color_yellow">Yellow</string>
+    <string name="subtitle_color_gray">Light gray</string>
+    <string name="secondary_subtitle_size_percent">%1$d%% of primary subtitle size</string>
+    <string name="settings_remember_audio">Remember manual audio choices</string>
+    <string name="settings_remember_audio_detail">Remember tracks for each file and languages for each show. Turning this off keeps existing memories but stops using and updating them.</string>
+    <string name="settings_remember_subtitles">Remember manual subtitle choices</string>
+    <string name="settings_remember_subtitles_detail">Remember primary subtitles per file/show, including Off. Disabling keeps saved choices.</string>
+    <string name="settings_clear_audio_memory">Clear audio memories</string>
+    <string name="settings_clear_audio_memory_detail">Forget audio choices for all files and shows on this device. Subtitle memories and the memory switch stay unchanged.</string>
+    <string name="settings_clear_subtitle_memory">Clear subtitle memories</string>
+    <string name="settings_clear_subtitle_memory_detail">Forget primary subtitle choices for all files and shows on this device. Audio memories and the memory switch stay unchanged.</string>
+    <string name="settings_seek_forward">Seek forward duration</string>
+    <string name="settings_seek_back">Seek back duration</string>
+    <string name="settings_progress_time">Progress bar right-side time</string>
+    <string name="progress_time_total">Total duration</string>
+    <string name="progress_time_remaining">Remaining duration</string>
+    <string name="settings_hold_speed">Hold-to-speed rate</string>
+    <string name="settings_hold_speed_detail">Hide controls, hold OK to speed up; release to restore. No passthrough.</string>
+    <string name="playback_speed_value">%1$s×</string>
+    <string name="player_hold_speed">%1$s× · Release OK to restore speed</string>
 </resources>

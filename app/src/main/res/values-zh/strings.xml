@@ -25,9 +25,13 @@
     <string name="kind_plex_detail">用 plex.tv 账号登录，自动发现账号下的服务器</string>
     <string name="kind_jellyfin_detail">输入服务器地址、用户名和密码</string>
     <string name="kind_emby_detail">输入服务器地址、用户名和密码</string>
+    <string name="kind_fnos">飞牛影视</string>
+    <string name="kind_fnos_detail">使用影视独立账号登录（非 NAS 账号）</string>
+    <string name="direct_login_fnos_hint">请输入影视独立账号。只填 IP 时自动补全 http 和端口 8005</string>
+    <string name="direct_login_fnos_address_hint">例如 192.168.1.10:8005</string>
 
     <string name="direct_login_title">连接 %1$s 服务器</string>
-    <string name="direct_login_hint">在服务器的控制台或网页端可以看到它的地址。只填 IP 时默认使用 http 和端口 8096</string>
+    <string name="direct_login_hint">只填 IP 时自动补全 http 和端口 8096</string>
     <string name="direct_login_address">服务器地址</string>
     <string name="direct_login_address_hint">例如 192.168.1.10:8096</string>
     <string name="direct_login_username">用户名</string>
@@ -52,6 +56,8 @@
 
     <string name="settings_title">设置</string>
     <string name="settings_section_playback">播放</string>
+    <string name="settings_section_audio">音频</string>
+    <string name="settings_section_compatibility">兼容性</string>
     <string name="settings_section_subtitles">字幕</string>
     <string name="settings_section_display">界面</string>
     <string name="settings_language">语言</string>
@@ -85,14 +91,13 @@
     <string name="settings_subtitle_position">字幕位置</string>
     <string name="settings_subtitle_position_detail">看宽银幕电影时选“靠下”，字幕显示在下方黑边里，不挡画面</string>
     <string name="settings_subtitle_background">字幕背景</string>
-    <string name="settings_subtitle_background_detail">字幕下面加半透明黑底，亮的画面上更容易看清</string>
-    <string name="settings_subtitle_style_note">位置和背景只对 SRT 等文本字幕生效，ASS 特效字幕和图片字幕按原样显示</string>
+    <string name="settings_subtitle_background_detail">文本字幕加半透明黑底；位置和背景不影响 ASS、图片字幕。</string>
     <string name="subtitle_position_low">靠下</string>
     <string name="subtitle_position_normal">标准</string>
     <string name="subtitle_position_high">偏高</string>
     <string name="subtitle_position_higher">更高</string>
     <string name="settings_allow_software_video_decoding">允许视频软解</string>
-    <string name="settings_allow_software_video_decoding_detail">硬解不可用时，尝试软解 1080p 及以下的 H.264 / RV40 SDR 视频。能否流畅播放取决于设备、视频编码和帧率；不影响音频解码</string>
+    <string name="settings_allow_software_video_decoding_detail">硬解不可用时软解 ≤1080p H.264 / RV40 SDR，流畅度视设备而定。</string>
     <string name="settings_video_scale">默认画面比例</string>
     <string name="settings_video_scale_detail">播放时可以在“更多”里临时切换。裁剪会切掉画面边缘，拉伸会让画面变形</string>
     <string name="video_scale">画面比例</string>
@@ -100,13 +105,11 @@
     <string name="video_scale_zoom">裁剪填满</string>
     <string name="video_scale_fill">拉伸全屏</string>
     <string name="settings_audio_language">首选音轨语言</string>
-    <string name="settings_audio_language_detail">优先选这种语言的音轨；手动切换过的文件和剧集按手动的选择</string>
+    <string name="settings_audio_language_detail">优先选这种语言的音轨；开启音轨记忆时，手动选择优先。</string>
     <string name="settings_subtitle_mode">默认字幕</string>
-    <string name="settings_subtitle_mode_detail">手动切换过的文件和剧集按手动的选择</string>
+    <string name="settings_subtitle_mode_detail">开启字幕记忆时，手动选择的主字幕优先。</string>
     <string name="settings_subtitle_language">首选字幕语言</string>
     <string name="settings_subtitle_language_detail">默认字幕为“首选语言”或“仅强制字幕”时使用，简繁按字幕标题区分</string>
-    <string name="settings_clear_track_memory">清除记住的音轨和字幕</string>
-    <string name="settings_clear_track_memory_detail">忘掉各个文件、各部剧手动选过的音轨和字幕，之后按上面的设置选择</string>
     <string name="track_memory_cleared">已清除</string>
     <string name="follow_server">跟随服务器</string>
     <string name="subtitle_mode_language">首选语言</string>
@@ -120,7 +123,7 @@
     <string name="lang_japanese">日语</string>
     <string name="lang_korean">韩语</string>
     <string name="settings_add_server">添加服务器</string>
-    <string name="settings_add_server_detail">支持 Plex、Jellyfin、Emby，可以同时添加多台</string>
+    <string name="settings_add_server_detail">支持 Plex、Jellyfin、Emby 和飞牛影视，可以同时添加多台</string>
     <string name="server_current">当前</string>
     <string name="server_switch">切换到这台服务器</string>
     <string name="server_repick">重新选择 Plex 服务器</string>
@@ -156,6 +159,7 @@
     <string name="skip_off">关闭</string>
     <string name="skip_button">显示跳过按钮</string>
     <string name="skip_auto">自动跳过</string>
+    <string name="subtitle_size_xsmall">更小</string>
     <string name="subtitle_size_small">小</string>
     <string name="subtitle_size_normal">标准</string>
     <string name="subtitle_size_large">大</string>
@@ -234,7 +238,7 @@
     <string name="info_show">显示播放信息</string>
     <string name="info_hide">隐藏播放信息</string>
     <string name="settings_frame_rate">自动切换刷新率</string>
-    <string name="settings_frame_rate_detail">按片源帧率切换输出刷新率（如 24p → 24Hz），画面更平滑。需要电视/投影仪支持多种刷新率，切换时可能黑屏一两秒</string>
+    <string name="settings_frame_rate_detail">匹配片源帧率，需设备支持；切换时可能短暂黑屏。</string>
     <string name="settings_audio_delay">音频延迟</string>
     <string name="settings_audio_delay_detail">蓝牙音箱或功放有延迟时调整，所有视频生效</string>
     <string name="cancel">取消</string>
@@ -281,9 +285,9 @@
     <string name="settings_allow_transcode">允许服务器转码</string>
     <string name="settings_allow_transcode_detail">关闭后只直接播放；设备不支持的视频会报错，不会占用服务器</string>
     <string name="settings_display_hdr">电视支持 HDR</string>
-    <string name="settings_display_hdr_detail">关闭后 HDR / 杜比视界片源由服务器转码成 1080p SDR，避免在不支持 HDR 的电视上画面发灰。需要允许服务器转码，并在服务器上开启 HDR 色调映射</string>
+    <string name="settings_display_hdr_detail">关闭后转为 1080p SDR；需允许转码并开启服务器色调映射。</string>
     <string name="settings_allow_burn">允许服务器烧录字幕</string>
-    <string name="settings_allow_burn_detail">为了显示字幕而让服务器转码并烧录。默认关闭：字幕尽量在本机渲染（含 ASS 特效字幕）。视频已经在转码时，Plex 上本机显示不了的字幕总会烧录；Emby / Jellyfin 会把内封字幕随转码一起传给本机渲染，不用烧录</string>
+    <string name="settings_allow_burn_detail">允许为字幕转码烧录；Plex 转码时，不支持的字幕仍会烧录。</string>
     <string name="player_error">播放失败：%1$s</string>
     <string name="player_back_again_exit">再按一次返回键退出播放</string>
     <string name="player_fallback">设备无法直接播放，已切换到服务器转码</string>
@@ -340,14 +344,15 @@
 
     <!-- Phone input -->
     <string name="phone_input_title">手机扫码输入</string>
-    <string name="phone_input_hint">手机与电视连接同一局域网后扫码，五分钟内有效，仅可提交一次。局域网连接使用 HTTP，请在可信网络操作。无法打开时请关闭手机 VPN，或检查路由器的设备隔离设置。</string>
-    <string name="phone_input_web_hint">填写 Jellyfin / Emby 服务信息，发送后请在电视上确认连接。信息通过局域网 HTTP 直接发送到电视，请在可信网络操作。</string>
+    <string name="phone_input_hint">同一局域网扫码填写，5 分钟内有效。请在可信网络操作。</string>
+    <string name="phone_input_web_hint">发送后在电视上确认连接，请在可信局域网使用。</string>
+    <string name="phone_input_refresh">刷新二维码</string>
     <string name="phone_input_send">发送到电视</string>
     <string name="phone_input_sent">已发送，请在电视上选择“连接”完成登录。</string>
     <string name="phone_input_received">已收到手机输入，请检查信息后选择“连接”。</string>
     <string name="phone_input_web_error">发送失败，请检查地址和用户名。若电视窗口已关闭或二维码过期，请重新扫码；若电视已显示填写内容，请直接在电视确认。</string>
-    <string name="phone_input_expired">二维码已失效，请关闭此窗口后重新打开。</string>
-    <string name="phone_input_unavailable">无法启动手机输入，请检查电视的局域网连接后重新打开。</string>
+    <string name="phone_input_expired">二维码已过期，请刷新。</string>
+    <string name="phone_input_unavailable">手机输入暂不可用，请检查电视网络后刷新。</string>
     <string name="update_check">检查更新</string>
     <string name="update_check_detail">从 GitHub 下载新版本并打开系统安装界面</string>
     <string name="update_checking">正在检查…</string>
@@ -373,4 +378,28 @@
     <string name="update_checksum_failed">下载的文件不完整或已损坏，请重试，或换一个下载镜像。</string>
     <string name="update_allow_install">请在刚打开的设置里允许 Lumy 安装应用，返回后再选择“安装”。</string>
     <string name="update_install_unavailable">这台设备不支持从应用内安装更新。请从 %1$s 下载新版本后手动安装。</string>
+    <string name="player_secondary_subtitles">副字幕</string>
+    <string name="player_secondary_subtitle_style">副字幕样式</string>
+    <string name="subtitle_text_color">文字颜色</string>
+    <string name="subtitle_color_white">白色</string>
+    <string name="subtitle_color_yellow">黄色</string>
+    <string name="subtitle_color_gray">浅灰色</string>
+    <string name="secondary_subtitle_size_percent">主字幕字号的 %1$d%%</string>
+    <string name="settings_remember_audio">记住手动音轨选择</string>
+    <string name="settings_remember_audio_detail">记住各文件的音轨及各部剧的语言。关闭后不读取、不更新记忆，已有记录保留。</string>
+    <string name="settings_remember_subtitles">记住手动字幕选择</string>
+    <string name="settings_remember_subtitles_detail">记住各文件、各部剧的主字幕选择（含关闭）；停用保留记录。</string>
+    <string name="settings_clear_audio_memory">清除音轨记忆</string>
+    <string name="settings_clear_audio_memory_detail">清除本机所有文件和剧集的音轨记忆，保留字幕记忆和记忆开关状态。</string>
+    <string name="settings_clear_subtitle_memory">清除字幕记忆</string>
+    <string name="settings_clear_subtitle_memory_detail">清除本机所有文件和剧集的主字幕记忆，保留音轨记忆和记忆开关状态。</string>
+    <string name="settings_seek_forward">快进时长</string>
+    <string name="settings_seek_back">快退时长</string>
+    <string name="settings_progress_time">进度条右侧时间</string>
+    <string name="progress_time_total">视频总时长</string>
+    <string name="progress_time_remaining">剩余时长</string>
+    <string name="settings_hold_speed">长按倍速</string>
+    <string name="settings_hold_speed_detail">控制栏隐藏时长按确认键倍速，松手恢复原速。音轨直通时不可用。</string>
+    <string name="playback_speed_value">%1$s×</string>
+    <string name="player_hold_speed">%1$s× · 松开确认键恢复原速</string>
 </resources>

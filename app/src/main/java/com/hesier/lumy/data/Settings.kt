@@ -43,6 +43,25 @@ class Settings(context: Context) {
             ?.let { runCatching { VideoScale.valueOf(it) }.getOrNull() } ?: VideoScale.FIT
         set(v) = prefs.edit().putString("video_scale", v.name).apply()
 
+    var seekForwardSeconds: Int
+        get() = prefs.getInt("seek_forward_seconds", 30).takeIf { it in SEEK_INTERVALS } ?: 30
+        set(v) = prefs.edit().putInt("seek_forward_seconds", v).apply()
+
+    var seekBackSeconds: Int
+        get() = prefs.getInt("seek_back_seconds", 10).takeIf { it in SEEK_INTERVALS } ?: 10
+        set(v) = prefs.edit().putInt("seek_back_seconds", v).apply()
+
+    var holdSpeed: Float
+        get() = prefs.getFloat("hold_speed", 2f).takeIf { it in HOLD_SPEEDS } ?: 2f
+        set(v) = prefs.edit().putFloat("hold_speed", v).apply()
+
+    var showRemainingTime: Boolean
+        get() = prefs.getBoolean("show_remaining_time", true)
+        set(v) = prefs.edit().putBoolean("show_remaining_time", v).apply()
+
+    val seekForwardMs: Long get() = seekForwardSeconds * 1_000L
+    val seekBackMs: Long get() = seekBackSeconds * 1_000L
+
     /** [SUBTITLE_POSITIONS] 的下标 */
     var subtitlePosition: Int
         get() = prefs.getInt("subtitle_position", 1).coerceIn(0, SUBTITLE_POSITIONS.lastIndex)
@@ -56,6 +75,18 @@ class Settings(context: Context) {
     var subtitleScale: Float
         get() = prefs.getFloat("subtitle_scale", 1f)
         set(v) = prefs.edit().putFloat("subtitle_scale", v).apply()
+
+    var secondarySubtitleScale: Float
+        get() = prefs.getFloat("secondary_subtitle_scale", 0.85f)
+        set(v) = prefs.edit().putFloat("secondary_subtitle_scale", v).apply()
+
+    var secondarySubtitleColor: Int
+        get() = prefs.getInt("secondary_subtitle_color", -1)
+        set(v) = prefs.edit().putInt("secondary_subtitle_color", v).apply()
+
+    var secondarySubtitleBackground: Boolean
+        get() = prefs.getBoolean("secondary_subtitle_background", subtitleBackground)
+        set(v) = prefs.edit().putBoolean("secondary_subtitle_background", v).apply()
 
     /** 关闭后只直接播放，设备不支持的格式会报错而不是交给服务器转码 */
     var allowTranscode: Boolean
@@ -174,6 +205,14 @@ class Settings(context: Context) {
         get() = prefs.getString("audio_language", null)
         set(v) = prefs.edit().putString("audio_language", v).apply()
 
+    var rememberAudioSelection: Boolean
+        get() = prefs.getBoolean("remember_audio_selection", true)
+        set(v) = prefs.edit().putBoolean("remember_audio_selection", v).apply()
+
+    var rememberSubtitleSelection: Boolean
+        get() = prefs.getBoolean("remember_subtitle_selection", true)
+        set(v) = prefs.edit().putBoolean("remember_subtitle_selection", v).apply()
+
     var subtitleMode: SubtitleMode
         get() = prefs.getString("subtitle_mode", null)
             ?.let { runCatching { SubtitleMode.valueOf(it) }.getOrNull() } ?: SubtitleMode.SERVER
@@ -233,7 +272,9 @@ class Settings(context: Context) {
         const val PLAYLISTS_ID = "__playlists"
         /** GitHub 下载代理：原地址拼在它后面 */
         const val DEFAULT_UPDATE_MIRROR = "https://ghfast.top/"
-        val SUBTITLE_SCALES = listOf(0.8f, 1f, 1.25f, 1.5f)
+        val SUBTITLE_SCALES = listOf(0.6f, 0.8f, 1f, 1.25f, 1.5f)
+        val HOLD_SPEEDS = listOf(1.25f, 1.5f, 2f, 2.5f, 3f)
+        val SEEK_INTERVALS = listOf(5, 10, 15, 30, 60, 120)
         val UI_SCALES = listOf(0.8f, 0.9f, 1f, 1.1f, 1.2f)
         /** 字幕离底部的距离（占画面高度的比例）：靠下、标准、偏高、更高 */
         val SUBTITLE_POSITIONS = listOf(0.02f, 0.06f, 0.12f, 0.2f)

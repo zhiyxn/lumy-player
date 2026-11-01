@@ -7,7 +7,7 @@ English | [简体中文](README.zh-CN.md)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 ![Android 5.0+](https://img.shields.io/badge/Android-5.0%2B-3DDC84?logo=android&logoColor=white)
 
-A remote-friendly media client for Android TV, Android boxes and projectors, with support for Plex, Jellyfin and Emby.
+A remote-friendly media client for Android TV, Android boxes and projectors, with support for Plex, Jellyfin, Emby and fnOS Media.
 
 <p align="center"><img src="docs/screenshots/home.webp" alt="Home screen"></p>
 
@@ -16,6 +16,7 @@ A remote-friendly media client for Android TV, Android boxes and projectors, wit
 - **Sign-in and servers**
   - Plex: sign in with a plex.tv PIN, discover the servers on your account, and probe for a reachable address (local / remote / relay), reconnecting automatically when the connection drops
   - Jellyfin / Emby: sign in with server address, username and password (a bare IP defaults to http and port 8096), or scan a QR code and type them on your phone
+  - fnOS Media: sign in with server address, media account and password (a bare IP defaults to http and port 8005)
   - HTTPS servers with Let's Encrypt certificates also work on Android 5.0–7.0, whose built-in trust store is too old (see [TLS compatibility](docs/tls-compatibility.md))
   - Add multiple servers (even the same server more than once), switch between them at the top of the sidebar, and rename or remove them in Settings
 - **Browsing**: home hubs (Continue Watching, Recently Added, …), library grids with filters, sorting and an A–Z index, search, collections, playlists, cast filmographies and "More Like This"
@@ -24,11 +25,14 @@ A remote-friendly media client for Android TV, Android boxes and projectors, wit
   - Direct play or server-side HLS transcoding based on the device's decoder capabilities, with optional quality / bitrate limits; HDR, Dolby Vision and passthrough support (see [Playback and Decoding](docs/playback.md))
   - FFmpeg audio decoder extension and audio passthrough (AC3 / DTS to your receiver)
   - Local rendering of styled ASS / SSA subtitles (libass), avoiding server-side burn-in where possible
+  - Dual subtitles via More → Secondary subtitles; smaller secondary text below the primary, with original ASS / bitmap layouts preserved
   - Multi-part files, chapters, intro skipping, auto-play next episode
   - Audio / subtitle delay adjustment, refresh-rate matching
   - Remembers audio and subtitle choices, reports progress to the server
 - **Settings**: default quality, allow / disallow transcoding, subtitle size, sidebar items and order (saved per server), server management and more
 - **Languages**: English, Simplified Chinese and Traditional Chinese, following the system language or chosen in Settings
+
+See the [server support matrix](docs/server-support.md) for differences between integrations.
 
 ## Screenshots
 
@@ -64,6 +68,7 @@ APKs you build yourself are signed with a different key, so they cannot be insta
 - Only movie and TV show libraries are shown; music, photo and other library types are not supported yet
 - No Live TV / DVR and no offline downloads
 - Plex Home user switching and Jellyfin Quick Connect are not supported; sign in with the account you want to use
+- fnOS Media does not yet support collections, playlists, cast filmographies or recommendations; transcoding does not support video stream copy or 7.1 audio output
 - Dolby Vision Profile 5 prefers native playback and can try HEVC compatibility playback if unavailable or failing, but colors may be incorrect. Correct output still requires a compatible Dolby Vision chain (details in [Playback and Decoding](docs/playback.md#dolby-vision))
 - ARM devices only (`armeabi-v7a` / `arm64-v8a`)
 - Phone input needs the phone and TV on the same LAN. If the page does not open, turn off the phone's VPN and check guest Wi-Fi / AP isolation; on a TV with several network connections, disconnect the unused ones
@@ -110,7 +115,7 @@ keyPassword=...
 Run the unit tests (core, net and server modules, plain JVM):
 
 ```bash
-./gradlew :core:test :net:test :server-plex:test :server-jellyfin:test
+./gradlew :core:test :net:test :server-plex:test :server-jellyfin:test :server-fnos:test
 ```
 
 ### Publishing a release
@@ -131,6 +136,7 @@ core/            Plain Kotlin: media models and the MediaServer interface, indep
 net/             Plain Kotlin: the LAN receiver for phone input, the extra TLS trust roots for older Android and the update checker
 server-plex/     Plain Kotlin: Plex account, server discovery, connection probing and API (OkHttp + kotlinx.serialization)
 server-jellyfin/ Plain Kotlin: Jellyfin and Emby sign-in and API (same API family, auth headers chosen by ServerKind)
+server-fnos/     Plain Kotlin: fnOS Media sign-in, native APIs and compatibility endpoints
 app/             Android app: UI (View + RecyclerView, no Leanback / Compose) and the player
 ```
 

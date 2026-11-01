@@ -44,8 +44,8 @@ android {
         applicationId = "com.hesier.lumy"
         minSdk = 21
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.4.0"
+        versionCode = 10
+        versionName = "0.5.1"
         // 电视盒子/投影仪都是 ARM，去掉 x86 的 FFmpeg 库减小体积
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
@@ -124,6 +124,7 @@ dependencies {
     implementation(project(":net"))
     implementation(project(":server-plex"))
     implementation(project(":server-jellyfin"))
+    implementation(project(":server-fnos"))
 
     implementation(libs.coroutines.android)
     implementation(libs.androidx.core)
