@@ -132,7 +132,7 @@ class PlexMediaServer(
     override suspend fun children(id: String): List<MediaItem> =
         get("/library/metadata/$id/children").metadata.map { it.toItem() }
 
-    override fun playbackSource(request: PlaybackRequest): PlaybackSource {
+    override suspend fun playbackSource(request: PlaybackRequest): PlaybackSource {
         val version = request.version
         val externalSubs = version.subtitles.filter { it.external }.map {
             ExternalSubtitle(
@@ -155,7 +155,11 @@ class PlexMediaServer(
             )
             is PlaybackMode.Transcode -> PlaybackSource(
                 urls = version.parts.indices.map { i ->
-                    transcodeUrl(request, mode, i, offsetMs = if (i == startPart) startOffset else 0)
+                    val url = transcodeUrl(request, mode, i, offsetMs = if (i == startPart) startOffset else 0)
+                    // 先请求一次 decision：直接请求 start.m3u8 时服务端会沿用这台设备上次的决定，
+                    // 实测切换字幕后烧录的还是旧字幕（会话信息里显示的却是新字幕）
+                    runCatching { client.execute(client.request(url.replace("/start.m3u8?", "/decision?"), session.token).build()) }
+                    url
                 },
                 isHls = true,
                 // 烧录字幕时外挂字幕就不需要了
@@ -303,20 +307,17 @@ internal fun LibraryQuery.params(): Array<Pair<String, String>> {
 }
 
 /**
- * 告诉服务端转码目标：HLS + TS 封装，视频 H.264/HEVC。
- * 只声明 audioCodec 不够，服务端仍会把音频转成 AAC 立体声；还要逐个声明可以原样保留的音频编码
- * 和声道上限，EAC3 7.1 / AC3 5.1 / DTS 才会被直接复制（实测服务端 decision 由 transcode 变为 copy）。
- * TrueHD 不能放进 TS，服务端会转成 EAC3。客户端有 FFmpeg，这些格式都能解码。
+ * Advertise only audio formats supported by the default HLS TS extractor.
+ * FFmpeg decoder support does not make DTS (HDMV), FLAC or Opus extractable from TS.
+ * Explicit codec and channel limits let Plex preserve supported multichannel audio.
  */
 private fun clientProfileExtra(videoCodecs: String) = listOf(
     "add-transcode-target(type=videoProfile&context=streaming&protocol=hls&container=mpegts" +
-        "&videoCodec=$videoCodecs&audioCodec=aac,ac3,eac3,mp3,opus,flac,dca)",
+        "&videoCodec=$videoCodecs&audioCodec=aac,ac3,eac3,mp3)",
     "add-transcode-target-audio-codec(type=videoProfile&context=streaming&protocol=hls&audioCodec=eac3)",
     "add-transcode-target-audio-codec(type=videoProfile&context=streaming&protocol=hls&audioCodec=ac3)",
-    "add-transcode-target-audio-codec(type=videoProfile&context=streaming&protocol=hls&audioCodec=dca)",
     "add-limitation(scope=videoAudioCodec&scopeName=eac3&type=upperBound&name=audio.channels&value=8)",
     "add-limitation(scope=videoAudioCodec&scopeName=ac3&type=upperBound&name=audio.channels&value=6)",
-    "add-limitation(scope=videoAudioCodec&scopeName=dca&type=upperBound&name=audio.channels&value=8)",
 ).joinToString("+")
 
 private val CLIENT_PROFILE_EXTRA = clientProfileExtra("h264,hevc")
@@ -325,8 +326,9 @@ private val CLIENT_PROFILE_EXTRA = clientProfileExtra("h264,hevc")
 private val CLIENT_PROFILE_EXTRA_SDR = clientProfileExtra("h264")
 
 internal fun PlexHub.toHub(): Hub? {
-    if (metadata.isEmpty()) return null
-    val items = metadata.map { it.toItem() }
+    // 音乐和照片暂不支持：首页的“最近添加的音乐”、音频播放列表等去掉，整行都是就不显示
+    val items = metadata.filter { it.isSupported() }.map { it.toItem() }
+    if (items.isEmpty()) return null
     // 继续观看/待看用横版截图，其余（最近添加等）用竖版海报，和官方客户端一致
     val landscape = isContinueHub() || items.all { it.type == MediaType.EPISODE }
     return Hub(
@@ -335,6 +337,12 @@ internal fun PlexHub.toHub(): Hub? {
         style = if (landscape) HubStyle.LANDSCAPE else HubStyle.POSTER,
         items = items,
     )
+}
+
+internal fun PlexMetadata.isSupported(): Boolean = when (mediaType(type)) {
+    MediaType.MUSIC, MediaType.PHOTO -> false
+    MediaType.PLAYLIST -> playlistType == null || playlistType == "video"
+    else -> true
 }
 
 internal fun PlexMetadata.toItem(): MediaItem {

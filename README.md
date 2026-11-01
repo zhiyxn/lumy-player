@@ -2,7 +2,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-[![CI](https://github.com/hesier/lumy-player/actions/workflows/ci.yml/badge.svg)](https://github.com/hesier/lumy-player/actions/workflows/ci.yml)
+[![CI](https://github.com/hesier/lumy-player/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/hesier/lumy-player/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/hesier/lumy-player)](https://github.com/hesier/lumy-player/releases/latest)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 ![Android 5.0+](https://img.shields.io/badge/Android-5.0%2B-3DDC84?logo=android&logoColor=white)
@@ -55,6 +55,8 @@ A remote-friendly media client for Android TV, Android boxes and projectors, wit
 
 Download `lumy-player-vX.Y.Z.apk` from the [latest release](https://github.com/hesier/lumy-player/releases/latest) and sideload it onto your TV, box or projector. Requires Android 5.0 or later on an ARM device.
 
+Later versions can be installed from inside the app: it checks for a new release once a day (Settings › About also has Check for updates), downloads it and opens the system installer. The first time, Android asks you to allow Lumy to install apps. If GitHub is slow or blocked on your network, turn on Download mirror in the same section.
+
 APKs you build yourself are signed with a different key, so they cannot be installed over a release build (or vice versa). Uninstall the existing app first; your servers and settings will need to be set up again.
 
 ## Known limitations
@@ -62,7 +64,7 @@ APKs you build yourself are signed with a different key, so they cannot be insta
 - Only movie and TV show libraries are shown; music, photo and other library types are not supported yet
 - No Live TV / DVR and no offline downloads
 - Plex Home user switching and Jellyfin Quick Connect are not supported; sign in with the account you want to use
-- Dolby Vision Profile 5 needs a device with a Dolby Vision decoder; otherwise the server has to transcode it (details in [Playback and Decoding](docs/playback.md#dolby-vision))
+- Dolby Vision Profile 5 prefers native playback and can try HEVC compatibility playback if unavailable or failing, but colors may be incorrect. Correct output still requires a compatible Dolby Vision chain (details in [Playback and Decoding](docs/playback.md#dolby-vision))
 - ARM devices only (`armeabi-v7a` / `arm64-v8a`)
 - Phone input needs the phone and TV on the same LAN. If the page does not open, turn off the phone's VPN and check guest Wi-Fi / AP isolation; on a TV with several network connections, disconnect the unused ones
 
@@ -113,7 +115,7 @@ Run the unit tests (core, net and server modules, plain JVM):
 
 ### Publishing a release
 
-Pushing a tag `v<versionName>` (e.g. `v0.1.0`) runs [release.yml](.github/workflows/release.yml), which builds a signed APK and attaches it to a GitHub release. The release notes come from that version's section in [CHANGELOG.md](CHANGELOG.md) and [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md), and the workflow fails if either is missing. It needs these repository secrets:
+Pushing a tag `v<versionName>` (e.g. `v0.1.0`) runs [release.yml](.github/workflows/release.yml), which builds a signed APK and attaches it to a GitHub release. The release notes come from that version's section in [CHANGELOG.md](CHANGELOG.md) and [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md), and the workflow fails if either is missing. The workflow also uploads `update.json` (version, APK checksum and the notes in each language), which the in-app updater reads from the latest release. The tagged commit must already be on `main`. It needs these repository secrets:
 
 | Secret | Value |
 |---|---|
@@ -126,7 +128,7 @@ Pushing a tag `v<versionName>` (e.g. `v0.1.0`) runs [release.yml](.github/workfl
 
 ```
 core/            Plain Kotlin: media models and the MediaServer interface, independent of any server
-net/             Plain Kotlin: the LAN receiver for phone input and the extra TLS trust roots for older Android
+net/             Plain Kotlin: the LAN receiver for phone input, the extra TLS trust roots for older Android and the update checker
 server-plex/     Plain Kotlin: Plex account, server discovery, connection probing and API (OkHttp + kotlinx.serialization)
 server-jellyfin/ Plain Kotlin: Jellyfin and Emby sign-in and API (same API family, auth headers chosen by ServerKind)
 app/             Android app: UI (View + RecyclerView, no Leanback / Compose) and the player
@@ -143,7 +145,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Pre-built APKs are available on the [Rel
 Lumy Player is built on these open-source projects:
 
 - [AndroidX Media3 / ExoPlayer](https://github.com/androidx/media) — playback engine (Apache-2.0)
-- [jellyfin-androidx-media](https://github.com/jellyfin/jellyfin-androidx-media) — prebuilt Media3 FFmpeg audio decoder extension (GPL-3.0), which bundles [FFmpeg](https://ffmpeg.org)
+- [jellyfin-androidx-media](https://github.com/jellyfin/jellyfin-androidx-media) — Media3 FFmpeg audio decoder extension (GPL-3.0), which bundles [FFmpeg](https://ffmpeg.org); Lumy uses a [patched ARM build](third_party/media3-ffmpeg/README.md) for TrueHD initialization
 - [libass-android / ass-media](https://github.com/peerless2012/libass-android) — ASS / SSA subtitle rendering for Media3 (MIT), built on [libass](https://github.com/libass/libass) (ISC)
 - [OkHttp](https://github.com/square/okhttp), [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization), [kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines) and [Coil](https://github.com/coil-kt/coil) (Apache-2.0)
 - [ZXing](https://github.com/zxing/zxing) — QR code generation (Apache-2.0)

@@ -62,6 +62,10 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("allow_transcode", true)
         set(v) = prefs.edit().putBoolean("allow_transcode", v).apply()
 
+    var allowSoftwareVideoDecoding: Boolean
+        get() = prefs.getBoolean("allow_software_video_decoding", false)
+        set(v) = prefs.edit().putBoolean("allow_software_video_decoding", v).apply()
+
     /**
      * 电视是否支持 HDR。系统检测到的结果不可靠（不少盒子总是报支持或什么都不报），所以让用户自己选。
      * 关闭后 HDR 片源交给服务器转成 SDR，避免画面发灰
@@ -85,7 +89,7 @@ class Settings(context: Context) {
     fun setHiddenSidebarItems(serverId: String, ids: Set<String>) =
         prefs.edit().putStringSet("hidden_sidebar:$serverId", ids).apply()
 
-    /** 侧边栏媒体库的顺序（媒体库 id）；不在列表里的新媒体库排在后面 */
+    /** 侧边栏媒体库的顺序（媒体库 id，以及 [PLAYLISTS_ID]）；不在列表里的新媒体库排在后面 */
     fun sidebarOrder(serverId: String): List<String> =
         prefs.getString("sidebar_order:$serverId", null)?.split(',')?.filter { it.isNotBlank() } ?: emptyList()
 
@@ -142,8 +146,8 @@ class Settings(context: Context) {
         set(v) = prefs.edit().putBoolean("match_frame_rate", v).apply()
 
     /**
-     * 本机杜比视界解码器实际解不出画面的 profile（自动检测后记下），这些片源以后直接用 HEVC 解码器播放 HDR10 基础层。
-     * 记的是设备能力，和服务器无关。
+     * Locally failed Dolby Vision profiles use HEVC compatibility decoding on later attempts.
+     * P5 colors may be incorrect; this device capability cache is independent of the server.
      */
     var brokenDolbyVisionProfiles: Set<Int>
         get() = prefs.getStringSet("broken_dovi_profiles", emptySet())!!.mapNotNull { it.toIntOrNull() }.toSet()
@@ -188,6 +192,32 @@ class Settings(context: Context) {
             SubtitleMode.OFF -> SubtitleRule.Off
         }
 
+    /** 启动时每天最多检查一次新版本 */
+    var autoCheckUpdates: Boolean
+        get() = prefs.getBoolean("auto_check_updates", true)
+        set(v) = prefs.edit().putBoolean("auto_check_updates", v).apply()
+
+    var lastUpdateCheck: Long
+        get() = prefs.getLong("last_update_check", 0)
+        set(v) = prefs.edit().putLong("last_update_check", v).apply()
+
+    /** 自动检查时不再提示的版本（versionCode）；手动检查仍会显示 */
+    var skippedUpdate: Int
+        get() = prefs.getInt("skipped_update", 0)
+        set(v) = prefs.edit().putInt("skipped_update", v).apply()
+
+    /** github.com 很慢或打不开时，版本信息和 APK 都通过 [updateMirrorUrl] 下载 */
+    var useUpdateMirror: Boolean
+        get() = prefs.getBoolean("use_update_mirror", false)
+        set(v) = prefs.edit().putBoolean("use_update_mirror", v).apply()
+
+    /** 留空恢复默认镜像 */
+    var updateMirrorUrl: String
+        get() = prefs.getString("update_mirror_url", null)?.takeIf { it.isNotBlank() } ?: DEFAULT_UPDATE_MIRROR
+        set(v) = prefs.edit().putString("update_mirror_url", v.trim()).apply()
+
+    val updateMirror: String? get() = updateMirrorUrl.takeIf { useUpdateMirror }
+
     private fun enumOr(name: String?, default: SkipMode) =
         name?.let { runCatching { SkipMode.valueOf(it) }.getOrNull() } ?: default
 
@@ -201,6 +231,8 @@ class Settings(context: Context) {
         }
 
         const val PLAYLISTS_ID = "__playlists"
+        /** GitHub 下载代理：原地址拼在它后面 */
+        const val DEFAULT_UPDATE_MIRROR = "https://ghfast.top/"
         val SUBTITLE_SCALES = listOf(0.8f, 1f, 1.25f, 1.5f)
         val UI_SCALES = listOf(0.8f, 0.9f, 1f, 1.1f, 1.2f)
         /** 字幕离底部的距离（占画面高度的比例）：靠下、标准、偏高、更高 */

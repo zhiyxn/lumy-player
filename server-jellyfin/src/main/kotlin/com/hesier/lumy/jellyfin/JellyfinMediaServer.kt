@@ -47,6 +47,9 @@ class JellyfinMediaServer(
     /** 旧版本保存的会话没有单独的设备标识，当时用的是客户端默认的 */
     private val deviceId = session.deviceId ?: client.info.deviceId
 
+    // 两家都能把内封字幕复制进 MKV 转码输出（SubtitleMethod=Embed），见 transcodeUrl
+    override val embedsSubtitles: Boolean get() = true
+
     /** 已经发过“开始播放”的会话，之后的上报走 Progress */
     private val startedSessions = Collections.synchronizedSet(HashSet<String>())
 
@@ -243,7 +246,7 @@ class JellyfinMediaServer(
         return get<ItemsResult>(b.withFields()).items.map { it.toItem() }
     }
 
-    override fun playbackSource(request: PlaybackRequest): PlaybackSource {
+    override suspend fun playbackSource(request: PlaybackRequest): PlaybackSource {
         val version = request.version
         val externalSubs = version.subtitles.filter { it.external }.map {
             ExternalSubtitle(
@@ -273,7 +276,7 @@ class JellyfinMediaServer(
             )
             is PlaybackMode.Transcode -> PlaybackSource(
                 urls = listOf(transcodeUrl(request, mode)),
-                isHls = true,
+                isHls = mode.embedSubtitleId == null,
                 // 烧录字幕时外挂字幕就不需要了
                 externalSubtitles = if (mode.burnSubtitleId != null) emptyList() else externalSubs,
                 startPart = 0,
@@ -286,25 +289,41 @@ class JellyfinMediaServer(
      * HLS 转码。[PlaybackMode.Transcode.copyVideo] 时允许直接复制视频流，只换封装，服务器几乎没有负担；
      * 本机解不了视频或限码率时必须重新编码。音频声明 AC3/EAC3 等，客户端有 FFmpeg，多声道也能原样保留。
      * 不带起播位置：服务端的播放列表总是覆盖整部影片，播放器就绪后自己 seek 过去。
+     *
+     * 要带内封字幕时改用 MKV 渐进式转码：HLS 的 TS 分片放不下 PGS 等图形字幕，MKV 可以原样复制
+     * （实测 Emby 输出里有 S_HDMV/PGS 轨道，由播放器渲染）。这种流不能跳转，从起播点开始转码。
      */
     private fun transcodeUrl(request: PlaybackRequest, mode: PlaybackMode.Transcode): String {
-        val b = url("Videos/${request.item.id}/master.m3u8").addAll(
+        val embed = mode.embedSubtitleId
+        // MKV 放得下 TrueHD / DTS 等，本机能解码时把原音轨的格式也列上，服务端才会原样复制（实测不列就转成 AAC）
+        val sourceAudio = request.version.audio.firstOrNull { it.id == request.audioStreamId }?.codec?.lowercase()
+        val audioCodecs = AUDIO_CODECS + listOfNotNull(sourceAudio.takeIf { embed != null && mode.copyAudio && it !in AUDIO_CODECS })
+        val b = url(if (embed != null) "Videos/${request.item.id}/stream.mkv" else "Videos/${request.item.id}/master.m3u8").addAll(
             "MediaSourceId" to request.version.id,
             "PlaySessionId" to request.sessionId,
             "DeviceId" to deviceId,
             // 只允许 H.264 时服务端会对 HDR 片源做色调映射（需在服务端开启）
             "VideoCodec" to if (mode.sdr) "h264" else "h264,hevc",
-            "AudioCodec" to "aac,ac3,eac3,mp3,opus,flac",
+            "AudioCodec" to audioCodecs.joinToString(","),
             "TranscodingMaxAudioChannels" to "8",
-            "SegmentContainer" to "ts",
-            "BreakOnNonKeyFrames" to "true",
             "AllowVideoStreamCopy" to mode.copyVideo.toString(),
             "AllowAudioStreamCopy" to "true",
         )
+        if (embed != null) {
+            b.addQueryParameter("StartTimeTicks", (request.startMs * 10_000).toString())
+        } else {
+            b.addQueryParameter("SegmentContainer", "ts")
+            b.addQueryParameter("BreakOnNonKeyFrames", "true")
+        }
         request.audioStreamId?.let { b.addQueryParameter("AudioStreamIndex", it) }
         mode.burnSubtitleId?.let {
             b.addQueryParameter("SubtitleStreamIndex", it)
             b.addQueryParameter("SubtitleMethod", "Encode")
+        }
+        embed?.let {
+            b.addQueryParameter("SubtitleStreamIndex", it)
+            b.addQueryParameter("SubtitleMethod", "Embed")
+            b.addQueryParameter("SubtitleCodec", "copy")
         }
         // 不带码率时服务端按很低的默认值（640 kbps）转码，画面会缩到 416x234，所以总要给一个
         val kbps = mode.maxBitrateKbps ?: if (mode.copyVideo) COPY_MAX_KBPS else REENCODE_KBPS
@@ -409,6 +428,7 @@ class JellyfinMediaServer(
         val EMPTY_BODY = ByteArray(0).toRequestBody()
         /** 复制视频流时的码率上限，足够高，避免服务端因“超码率”改为重新编码 */
         const val COPY_MAX_KBPS = 200_000
+        private val AUDIO_CODECS = listOf("aac", "ac3", "eac3", "mp3", "opus", "flac")
         /** 不限画质但本机解不了、必须重新编码时的目标码率（1080p 高画质） */
         const val REENCODE_KBPS = 20_000
         const val LIST_FIELDS = "Overview,ChildCount,RecursiveItemCount,ParentId"

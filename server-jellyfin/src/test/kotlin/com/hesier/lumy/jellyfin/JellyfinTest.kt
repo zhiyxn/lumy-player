@@ -4,6 +4,7 @@ import com.hesier.lumy.core.HdrType
 import com.hesier.lumy.core.LibraryQuery
 import com.hesier.lumy.core.MarkerType
 import com.hesier.lumy.core.MediaType
+import com.hesier.lumy.core.AudioStream
 import com.hesier.lumy.core.PlaybackMode
 import com.hesier.lumy.core.PlaybackRequest
 import com.hesier.lumy.core.PlaybackState
@@ -121,7 +122,7 @@ class JellyfinTest {
     }
 
     @Test
-    fun `transcode url carries selection and limits`() {
+    fun `transcode url carries selection and limits`() = runBlocking {
         val detail = client.json.decodeFromString<BaseItem>(
             """{"Id":"m1","Type":"Movie","MediaSources":[{"Id":"src","MediaStreams":[]}]}""",
         ).toDetail(emptyList(), null)
@@ -154,6 +155,27 @@ class JellyfinTest {
         assertEquals("/Videos/m1/stream", d.encodedPath)
         assertEquals("tok", d.queryParameter("api_key"))
         assertEquals(1000L, direct.startOffsetMs)
+
+        // 带内封字幕时改用 MKV 渐进式转码，从起播点开始，字幕原样复制
+        val embed = server().playbackSource(req.copy(mode = PlaybackMode.Transcode(embedSubtitleId = "3")))
+        val e = embed.urls.single().toHttpUrl()
+        assertEquals(false, embed.isHls)
+        assertEquals("/Videos/m1/stream.mkv", e.encodedPath)
+        assertEquals("3", e.queryParameter("SubtitleStreamIndex"))
+        assertEquals("Embed", e.queryParameter("SubtitleMethod"))
+        assertEquals("copy", e.queryParameter("SubtitleCodec"))
+        assertEquals("10000000", e.queryParameter("StartTimeTicks"))
+        assertNull(e.queryParameter("SegmentContainer"))
+        assertEquals("aac,ac3,eac3,mp3,opus,flac", e.queryParameter("AudioCodec"))
+
+        // MKV 能带 TrueHD：本机能解码时把原音轨格式也列上，服务端才会原样复制；HLS 不加
+        val truehd = req.copy(
+            version = req.version.copy(audio = listOf(AudioStream("2", 1, "truehd", 8, "en", "English", true))),
+        )
+        val copied = server().playbackSource(truehd.copy(mode = PlaybackMode.Transcode(embedSubtitleId = "3", copyAudio = true))).urls.single().toHttpUrl()
+        assertEquals("aac,ac3,eac3,mp3,opus,flac,truehd", copied.queryParameter("AudioCodec"))
+        val hlsAudio = server().playbackSource(truehd.copy(mode = PlaybackMode.Transcode(copyAudio = true))).urls.single().toHttpUrl()
+        assertEquals("aac,ac3,eac3,mp3,opus,flac", hlsAudio.queryParameter("AudioCodec"))
     }
 
     @Test

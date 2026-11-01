@@ -12,14 +12,13 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.decoder.ffmpeg.FfmpegLibrary
 import androidx.media3.exoplayer.mediacodec.MediaCodecInfo
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
-import com.hesier.lumy.core.HdrType
 import com.hesier.lumy.core.SubtitleStream
 import com.hesier.lumy.core.VideoStream
 
 /**
  * 查询本机解码能力，决定能否直接播放。结果按 mime 缓存，MediaCodecList 查询在低端设备上不便宜。
  */
-class DeviceProfile(context: Context) {
+class DeviceProfile(context: Context, private val allowSoftwareVideo: Boolean = false) {
 
     private val decoderCache = HashMap<String, List<MediaCodecInfo>>()
 
@@ -32,13 +31,12 @@ class DeviceProfile(context: Context) {
         } == true
     }
 
-    /** @return null 表示可以硬解；否则是不能直接播放的原因 */
+    /** Return null when local hardware or the enabled software path can handle this stream. */
     fun videoProblem(v: VideoStream): PlaybackIssue? {
         val mime = videoMime(v.codec) ?: return PlaybackIssue.UnknownVideoCodec(v.codec)
-        // 杜比视界 P5 没有 HDR10 兼容层，没有杜比视界解码器时颜色会完全错误
-        if (v.hdr == HdrType.DOLBY_VISION && v.doviProfile == 5 && !hasDolbyVisionDecoder()) {
-            return PlaybackIssue.DolbyVisionProfile5
-        }
+        if (allowSoftwareVideo && SoftwareVideoPolicy.supports(v) &&
+            com.hesier.lumy.ui.player.legacy.NativeVideoDecoder.isAvailable()
+        ) return null
         val candidates = decoders(mime)
         if (candidates.isEmpty()) return PlaybackIssue.NoVideoDecoder(v.codec)
         val tenBit = (v.bitDepth ?: 8) > 8
@@ -55,7 +53,7 @@ class DeviceProfile(context: Context) {
     /** 优先硬件解码，其次 FFmpeg 扩展（DTS、TrueHD 等） */
     fun audioProblem(codec: String): PlaybackIssue? {
         val mime = audioMime(codec) ?: return PlaybackIssue.UnknownAudioCodec(codec)
-        if (decoders(mime).isNotEmpty()) return null
+        if (mime != SoftwareVideoPolicy.COOK_MIME && decoders(mime).isNotEmpty()) return null
         if (FfmpegLibrary.isAvailable() && FfmpegLibrary.supportsFormat(mime)) return null
         return PlaybackIssue.NoAudioDecoder(codec)
     }
@@ -67,7 +65,7 @@ class DeviceProfile(context: Context) {
     fun canRenderSubtitle(s: SubtitleStream, transcoding: Boolean): Boolean {
         val codec = s.codec.lowercase()
         return if (s.external) {
-            codec in EXTERNAL_TEXT_SUBTITLES
+            codec in EXTERNAL_TEXT_SUBTITLES || codec in SupMediaSourceFactory.CODECS
         } else {
             // 转码输出的 HLS 不带内封字幕，只能烧录
             !transcoding && codec in EMBEDDED_SUBTITLES
@@ -108,7 +106,7 @@ class DeviceProfile(context: Context) {
 
     companion object {
         private val SUPPORTED_CONTAINERS = setOf(
-            "mkv", "matroska", "mp4", "m4v", "mov", "webm", "ts", "mpegts", "flv", "avi", "ogg", "3gp", "mp3", "aac", "flac", "m4a",
+            "mkv", "matroska", "mp4", "m4v", "mov", "webm", "ts", "mpegts", "flv", "avi", "ogg", "3gp", "mp3", "aac", "flac", "m4a", "rm", "rmvb",
         )
         private val EXTERNAL_TEXT_SUBTITLES = setOf("srt", "subrip", "ass", "ssa", "vtt", "webvtt")
         private val EMBEDDED_SUBTITLES = EXTERNAL_TEXT_SUBTITLES + setOf(
@@ -124,6 +122,7 @@ class DeviceProfile(context: Context) {
             "mpeg2video", "mpeg2" -> MimeTypes.VIDEO_MPEG2
             "mpeg4" -> MimeTypes.VIDEO_MP4V
             "vc1" -> "video/wvc1"
+            "rv40" -> SoftwareVideoPolicy.RV40_MIME
             else -> null
         }
 
@@ -140,6 +139,7 @@ class DeviceProfile(context: Context) {
             "opus" -> MimeTypes.AUDIO_OPUS
             "vorbis" -> MimeTypes.AUDIO_VORBIS
             "alac" -> MimeTypes.AUDIO_ALAC
+            "cook" -> SoftwareVideoPolicy.COOK_MIME
             else -> if (codec.startsWith("pcm")) MimeTypes.AUDIO_RAW else null
         }
     }

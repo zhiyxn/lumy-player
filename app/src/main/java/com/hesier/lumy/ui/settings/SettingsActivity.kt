@@ -11,6 +11,9 @@ import com.hesier.lumy.ui.ThemedActivity
 import androidx.core.view.children
 import androidx.lifecycle.lifecycleScope
 import com.hesier.lumy.ui.widget.attempt
+import com.hesier.lumy.ui.widget.readableMessage
+import com.hesier.lumy.update.AppUpdater
+import com.hesier.lumy.update.UpdatePanel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -194,6 +197,10 @@ class SettingsActivity : ThemedActivity() {
                 settings.allowTranscode = !settings.allowTranscode
                 render()
             },
+            Row(getString(R.string.settings_allow_software_video_decoding), onOff(settings.allowSoftwareVideoDecoding), getString(R.string.settings_allow_software_video_decoding_detail)) {
+                settings.allowSoftwareVideoDecoding = !settings.allowSoftwareVideoDecoding
+                render()
+            },
             Row(getString(R.string.settings_display_hdr), onOff(settings.displaySupportsHdr), getString(R.string.settings_display_hdr_detail)) {
                 settings.displaySupportsHdr = !settings.displaySupportsHdr
                 render()
@@ -267,6 +274,24 @@ class SettingsActivity : ThemedActivity() {
             },
             listOf(
                 Row(getString(R.string.settings_version), BuildConfig.VERSION_NAME) {},
+                Row(getString(R.string.update_check), updateStatus(), getString(R.string.update_check_detail)) { checkForUpdate() },
+                Row(getString(R.string.update_auto_check), onOff(settings.autoCheckUpdates), getString(R.string.update_auto_check_detail)) {
+                    settings.autoCheckUpdates = !settings.autoCheckUpdates
+                    render()
+                },
+                Row(getString(R.string.update_mirror), onOff(settings.useUpdateMirror), getString(R.string.update_mirror_detail)) {
+                    settings.useUpdateMirror = !settings.useUpdateMirror
+                    render()
+                },
+            ) + listOfNotNull(
+                // 打开镜像后才显示地址
+                Row(getString(R.string.update_mirror_url), settings.updateMirrorUrl, getString(R.string.update_mirror_url_detail)) {
+                    InputPanel(this, getString(R.string.update_mirror_url), settings.updateMirrorUrl, Settings.DEFAULT_UPDATE_MIRROR, getString(R.string.server_rename_save)) {
+                        settings.updateMirrorUrl = it
+                        render()
+                    }.show()
+                }.takeIf { settings.useUpdateMirror },
+            ) + listOf(
                 Row(getString(R.string.device_info), "", getString(R.string.device_info_detail)) { showDeviceInfo() },
             ),
         )
@@ -353,6 +378,31 @@ class SettingsActivity : ThemedActivity() {
         }
     }
 
+    private var checkingUpdate = false
+
+    private fun updateStatus() = when {
+        checkingUpdate -> getString(R.string.update_checking)
+        else -> AppUpdater.available?.let { getString(R.string.update_available_short, it.versionName) }.orEmpty()
+    }
+
+    private fun checkForUpdate() {
+        if (checkingUpdate) return
+        checkingUpdate = true
+        render()
+        lifecycleScope.launch {
+            val result = attempt { AppUpdater.check() }
+            checkingUpdate = false
+            render()
+            result.onSuccess { info ->
+                if (info == null) Toast.makeText(this@SettingsActivity, R.string.update_up_to_date, Toast.LENGTH_SHORT).show()
+                else UpdatePanel(this@SettingsActivity, info, auto = false).apply { setOnDismissListener { render() } }.show()
+            }.onFailure { e ->
+                val hint = if (settings.useUpdateMirror) "" else "\n" + getString(R.string.update_mirror_hint)
+                Toast.makeText(this@SettingsActivity, getString(R.string.update_check_failed, e.readableMessage()) + hint, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun showDeviceInfo() {
         lifecycleScope.launch {
             val text = withContext(Dispatchers.Default) { DeviceInfo.build(this@SettingsActivity) }
@@ -364,13 +414,15 @@ class SettingsActivity : ThemedActivity() {
         val server = app.currentServer() ?: return
         lifecycleScope.launch {
             val libraries = attempt { server.libraries() }.getOrDefault(emptyList())
-            val ordered = Settings.applyOrder(libraries, settings.sidebarOrder(entryId)) { it.id }
+            // 播放列表也参与排序，没排过时在媒体库最后
+            val entries = libraries.map { it.id to it.title } + (Settings.PLAYLISTS_ID to getString(R.string.nav_playlists))
+            val ordered = Settings.applyOrder(entries, settings.sidebarOrder(entryId)) { it.first }
             val hidden = settings.hiddenSidebarItems(entryId)
-            val visible = ordered.filterNot { it.id in hidden }
-            ReorderPanel(this@SettingsActivity, getString(R.string.settings_sidebar_order), visible.map { it.id to it.title }) { ids ->
-                // 隐藏的库不参与排序但留在原位，显示中的库按新顺序填回原来的位置；取消隐藏后回到原处
+            val visible = ordered.filterNot { it.first in hidden }
+            ReorderPanel(this@SettingsActivity, getString(R.string.settings_sidebar_order), visible) { ids ->
+                // 隐藏的项不参与排序但留在原位，显示中的项按新顺序填回原来的位置；取消隐藏后回到原处
                 val next = ids.iterator()
-                settings.setSidebarOrder(entryId, ordered.map { if (it.id in hidden) it.id else next.next() })
+                settings.setSidebarOrder(entryId, ordered.map { if (it.first in hidden) it.first else next.next() })
             }.show()
         }
     }

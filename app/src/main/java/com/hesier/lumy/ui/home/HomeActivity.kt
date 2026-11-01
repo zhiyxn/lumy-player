@@ -11,6 +11,7 @@ import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import android.widget.EditText
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.hesier.lumy.ui.ThemedActivity
@@ -33,14 +34,19 @@ import com.hesier.lumy.ui.search.SearchFragment
 import com.hesier.lumy.ui.servers.AddServerActivity
 import com.hesier.lumy.ui.servers.ServersActivity
 import com.hesier.lumy.ui.detail
+import com.hesier.lumy.ui.icon
 import com.hesier.lumy.ui.widget.Option
 import com.hesier.lumy.ui.widget.OptionsPanel
 import com.hesier.lumy.ui.settings.SettingsActivity
+import com.hesier.lumy.update.AppUpdater
+import com.hesier.lumy.update.UpdatePanel
+import androidx.lifecycle.withResumed
 import com.hesier.lumy.ui.widget.ItemMenu
 import com.hesier.lumy.ui.widget.KeyRepeatThrottle
 import com.hesier.lumy.ui.widget.Backdrop
 import com.hesier.lumy.ui.widget.attempt
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -101,6 +107,15 @@ class HomeActivity : ThemedActivity(), HomeHost {
         checkConnection()
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction().replace(R.id.content, HomeFragment()).commit()
+            checkForUpdate()
+        }
+    }
+
+    /** 每天最多一次；检查完时如果已经进了别的页面，等回到首页再弹 */
+    private fun checkForUpdate() {
+        lifecycleScope.launch {
+            val info = AppUpdater.autoCheck() ?: return@launch
+            withResumed { UpdatePanel(this@HomeActivity, info, auto = true).show() }
         }
     }
 
@@ -115,10 +130,11 @@ class HomeActivity : ThemedActivity(), HomeHost {
     private class NavItem(val target: NavTarget, val binding: ItemSidebarBinding)
 
     private fun setupSidebar() {
+        binding.sidebar.alpha = SIDEBAR_INACTIVE_ALPHA
         setupServerSwitch()
         addNavItem(NavTarget.Search, R.drawable.ic_search, getString(R.string.nav_search))
         addNavItem(NavTarget.Home, R.drawable.ic_home, getString(R.string.nav_home))
-        addFooterItem(R.drawable.ic_settings, getString(R.string.nav_settings)) {
+        addActionItem(binding.sidebarFooter, R.drawable.ic_settings, getString(R.string.nav_settings)) {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         binding.root.viewTreeObserver.addOnGlobalFocusChangeListener { old, new ->
@@ -135,24 +151,30 @@ class HomeActivity : ThemedActivity(), HomeHost {
         // 触屏点击不移动焦点，上面的焦点监听不会展开侧边栏，只能点图标
         binding.sidebarLogo.setOnClickListener { setSidebarExpanded(!sidebarExpanded) }
         lifecycleScope.launch {
-            val loaded = attempt { server.libraries() }.getOrNull()
-            val libraries = loaded ?: emptyList()
             val settings = LumyApp.instance.settings
             val hidden = settings.hiddenSidebarItems(entryId)
+            // 播放列表入口和媒体库一起排序，要等两边都拿到再建侧边栏；有视频播放列表才显示
+            val hasPlaylists = async {
+                Settings.PLAYLISTS_ID !in hidden && attempt { server.playlists() }.getOrDefault(emptyList()).isNotEmpty()
+            }
+            val loaded = attempt { server.libraries() }.getOrNull()
+            val libraries = loaded ?: emptyList()
             sidebarSnapshot = sidebarState()
-            Settings.applyOrder(libraries, settings.sidebarOrder(entryId)) { it.id }.filterNot { it.id in hidden }.forEach { lib ->
-                val icon = if (lib.type == MediaType.SHOW) R.drawable.ic_tv else R.drawable.ic_movie
-                addNavItem(NavTarget.Section(lib), icon, lib.title)
+            val ids = libraries.map { it.id } + listOfNotNull(Settings.PLAYLISTS_ID.takeIf { hasPlaylists.await() })
+            Settings.applyOrder(ids, settings.sidebarOrder(entryId)) { it }.filterNot { it in hidden }.forEach { id ->
+                val lib = libraries.firstOrNull { it.id == id }
+                if (lib == null) {
+                    addActionItem(binding.sidebarItems, R.drawable.ic_list, getString(R.string.nav_playlists)) {
+                        startActivity(ItemListActivity.playlists(this@HomeActivity))
+                    }
+                } else {
+                    val icon = if (lib.type == MediaType.SHOW) R.drawable.ic_tv else R.drawable.ic_movie
+                    addNavItem(NavTarget.Section(lib), icon, lib.title)
+                }
             }
             // 在设置里隐藏了当前所在的媒体库：重建后侧边栏没有对应项，回到首页。
             // 媒体库没加载出来时不算，免得断网时把用户踢回首页
             if (loaded != null && navItems.none { it.binding.root.isActivated }) navigate(NavTarget.Home)
-            // 有视频播放列表才显示入口
-            if (Settings.PLAYLISTS_ID !in hidden && attempt { server.playlists() }.getOrDefault(emptyList()).isNotEmpty()) {
-                addFooterItem(R.drawable.ic_list, getString(R.string.nav_playlists), index = 0) {
-                    startActivity(ItemListActivity.playlists(this@HomeActivity))
-                }
-            }
         }
     }
 
@@ -165,7 +187,7 @@ class HomeActivity : ThemedActivity(), HomeHost {
         val item = inflateSidebarItem(binding.sidebarHeader, R.drawable.ic_server, app.currentEntry?.displayName ?: server.session.name)
         (item.root.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = resources.getDimensionPixelSize(R.dimen.sidebar_group_gap)
         item.root.setOnClickListener {
-            val options = servers.map { Option(it.displayName, it.detail(this), selected = it.id == entryId) }
+            val options = servers.map { Option(it.displayName, it.detail(this), selected = it.id == entryId, icon = it.kind.icon) }
             OptionsPanel(this, getString(R.string.nav_switch_server), options) { i ->
                 val picked = servers[i]
                 if (picked.id == entryId) return@OptionsPanel
@@ -196,12 +218,9 @@ class HomeActivity : ThemedActivity(), HomeHost {
         }
     }
 
-    private fun addFooterItem(icon: Int, label: String, index: Int = -1, onClick: () -> Unit) {
-        val item = inflateSidebarItem(binding.sidebarFooter, icon, label)
-        if (index >= 0) {
-            binding.sidebarFooter.removeView(item.root)
-            binding.sidebarFooter.addView(item.root, index)
-        }
+    /** 打开新页面而不是切换内容区的项（播放列表、设置），不会处于选中状态 */
+    private fun addActionItem(parent: android.view.ViewGroup, icon: Int, label: String, onClick: () -> Unit) {
+        val item = inflateSidebarItem(parent, icon, label)
         item.root.setOnClickListener {
             collapseSidebarOnTouch()
             onClick()
@@ -250,6 +269,7 @@ class HomeActivity : ThemedActivity(), HomeHost {
         val from = binding.sidebar.layoutParams.width
         val to = res.getDimensionPixelSize(if (expanded) R.dimen.sidebar_expanded else R.dimen.sidebar_collapsed)
         binding.sidebar.background = if (expanded) ContextCompat.getDrawable(this, R.drawable.sidebar_bg) else null
+        binding.sidebar.animate().alpha(if (expanded) 1f else SIDEBAR_INACTIVE_ALPHA).setDuration(160).start()
         sidebarAnimator?.cancel()
         sidebarAnimator = ValueAnimator.ofInt(from, to).apply {
             duration = 160
@@ -260,7 +280,7 @@ class HomeActivity : ThemedActivity(), HomeHost {
             start()
         }
         val alpha = if (expanded) 1f else 0f
-        (navItems.map { it.binding.label } + binding.sidebarHeader.labels() + binding.sidebarFooter.labels()).forEach {
+        (binding.sidebarHeader.labels() + binding.sidebarItems.labels() + binding.sidebarFooter.labels()).forEach {
             it.animate().alpha(alpha).setDuration(160).start()
         }
     }
@@ -278,7 +298,8 @@ class HomeActivity : ThemedActivity(), HomeHost {
     }
 
     /** 返回键：内容区 → 侧边栏 → 首页 → 退出，和官方客户端一致 */
-    private val keyThrottle = KeyRepeatThrottle()
+    // 首页和媒体库卡片多，长按移动比其他页面快一倍
+    private val keyThrottle = KeyRepeatThrottle(80)
     private var lastContentFocus: java.lang.ref.WeakReference<View>? = null
     private var restoringFocus = false
 
@@ -291,12 +312,14 @@ class HomeActivity : ThemedActivity(), HomeHost {
         val up = event.keyCode == KeyEvent.KEYCODE_DPAD_UP
         if (!up && event.keyCode != KeyEvent.KEYCODE_DPAD_DOWN) return false
         val focused = currentFocus ?: return false
+        // 输入框自行区分键盘操作、文字光标和控件导航。
+        if (focused is EditText) return false
         if (focused.isInside(binding.sidebar)) {
             if (event.action != KeyEvent.ACTION_DOWN) return true
             val items = sidebarFocusables()
             val i = items.indexOf(focused)
             val next = items.getOrNull(if (up) i - 1 else i + 1)
-            next?.requestFocus()
+            if (next?.requestFocus() == true) playFocusSound(if (up) View.FOCUS_UP else View.FOCUS_DOWN)
             return true
         }
         if (focused.isInside(binding.content)) {
@@ -306,13 +329,13 @@ class HomeActivity : ThemedActivity(), HomeHost {
             val direction = if (up) View.FOCUS_UP else View.FOCUS_DOWN
             val next = focused.focusSearch(direction)
             if (next == null || next === focused || next.isInside(binding.sidebar)) return true
-            next.requestFocus(direction)
+            if (next.requestFocus(direction)) playFocusSound(direction)
             return true
         }
         return false
     }
 
-    /** 侧边栏里可选的项，从上到下：切换服务器、搜索、主页、各媒体库，然后底部的播放列表、设置 */
+    /** 侧边栏里可选的项，从上到下：切换服务器、搜索、主页、各媒体库和播放列表，然后底部的设置 */
     private fun sidebarFocusables(): List<View> =
         listOf(binding.sidebarHeader, binding.sidebarItems, binding.sidebarFooter).flatMap { group ->
             (0 until group.childCount).map { group.getChildAt(it) }.filter { it.visibility == View.VISIBLE && it.isFocusable }
@@ -338,7 +361,10 @@ class HomeActivity : ThemedActivity(), HomeHost {
         if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && sidebarExpanded) {
             if (event.action == KeyEvent.ACTION_DOWN) {
                 restoringFocus = restoreContentFocus()
-                if (restoringFocus) return true
+                if (restoringFocus) {
+                    playFocusSound(View.FOCUS_RIGHT)
+                    return true
+                }
             } else if (event.action == KeyEvent.ACTION_UP && restoringFocus) {
                 restoringFocus = false
                 return true
@@ -433,6 +459,7 @@ class HomeActivity : ThemedActivity(), HomeHost {
 
     companion object {
         private const val EXIT_WINDOW_MS = 2_000L
+        private const val SIDEBAR_INACTIVE_ALPHA = 0.70f
 
         /** 换了服务器（或刚添加）后重新打开首页，清掉之前的页面 */
         fun restart(context: Context) {

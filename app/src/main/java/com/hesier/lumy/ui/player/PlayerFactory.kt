@@ -4,14 +4,12 @@ package com.hesier.lumy.ui.player
 
 import android.content.Context
 import android.os.Handler
-import android.os.Looper
 import androidx.media3.common.audio.ChannelMixingAudioProcessor
 import androidx.media3.common.audio.ChannelMixingMatrix
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
-import androidx.media3.exoplayer.text.TextOutput
 import androidx.media3.exoplayer.video.VideoRendererEventListener
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
@@ -26,24 +24,23 @@ import androidx.media3.extractor.DefaultExtractorsFactory
 import io.github.peerless2012.ass.media.AssHandler
 import io.github.peerless2012.ass.media.AssHandlerConfig
 import io.github.peerless2012.ass.media.factory.AssRenderersFactory
-import io.github.peerless2012.ass.media.kt.withAssMkvSupport
 import io.github.peerless2012.ass.media.parser.AssSubtitleParserFactory
 import io.github.peerless2012.ass.media.type.AssRenderType
 import okhttp3.OkHttpClient
 
 /** 播放器和它的 ASS 字幕处理器（libass），两者一起创建、一起释放 */
-class PlayerBundle(val player: ExoPlayer, val ass: AssHandler, val codecs: LumyCodecSelector)
+class PlayerBundle(val player: ExoPlayer, val ass: AssHandler, val codecs: LumyCodecSelector, val pgs: PgsTrackSelection)
 
-/**
- * 杜比视界 Profile 7（UHD 蓝光的双层格式）很多盒子的杜比视界解码器声明支持、实际不出画面（极米上一直转圈），
- * Media3 对 P7 又没有退回 HEVC 的逻辑。[baseLayerOnly] 时改用 HEVC 解码器只解 HDR10 基础层，由播放页起播前设置。
- */
-class LumyCodecSelector : MediaCodecSelector {
-    @Volatile var baseLayerOnly = false
+/** Route failed/unavailable Dolby Vision to HEVC; P5 retains its original, uncorrected colors. */
+class LumyCodecSelector(
+    private val delegate: MediaCodecSelector = MediaCodecSelector.DEFAULT,
+) : MediaCodecSelector {
+    @Volatile var hevcOnly = false
+    @Volatile var softwareVideoMime: String? = null
 
     override fun getDecoderInfos(mimeType: String, requiresSecureDecoder: Boolean, requiresTunnelingDecoder: Boolean) =
-        MediaCodecSelector.DEFAULT.getDecoderInfos(
-            if (baseLayerOnly && mimeType == MimeTypes.VIDEO_DOLBY_VISION) MimeTypes.VIDEO_H265 else mimeType,
+        if (mimeType == SoftwareVideoPolicy.COOK_MIME || mimeType == softwareVideoMime) emptyList() else delegate.getDecoderInfos(
+            if (hevcOnly && mimeType == MimeTypes.VIDEO_DOLBY_VISION) MimeTypes.VIDEO_H265 else mimeType,
             requiresSecureDecoder,
             requiresTunnelingDecoder,
         )
@@ -61,16 +58,25 @@ object PlayerFactory {
         headers: Map<String, String>,
         offsets: SyncOffsets,
         passthrough: Boolean = false,
+        allowSoftwareVideo: Boolean = false,
     ): PlayerBundle {
         val upstream = OkHttpDataSource.Factory(http).setDefaultRequestProperties(headers)
-        // ASS/SSA 交给 libass 渲染（保留字体、颜色、位置、动画），内封（MKV）和外挂都走这里
+        // ASS/SSA 交给 libass 渲染（保留字体、颜色、位置、动画），内封（MKV）和外挂都走这里；
+        // 没有索引的 MKV 由 ClusterSeekingExtractor 按簇查找来跳转
         val ass = AssHandler(AssRenderType.OVERLAY_OPEN_GL, AssHandlerConfig())
-        val assParsers = AssSubtitleParserFactory(ass)
-        val extractors = DefaultExtractorsFactory().withAssMkvSupport(assParsers, ass)
-        val mediaSources = DefaultMediaSourceFactory(DefaultDataSource.Factory(context, upstream), extractors)
-            .setSubtitleParserFactory(assParsers)
-
+        val pgs = PgsTrackSelection()
         val codecs = LumyCodecSelector()
+        val assParsers = PgsParserFactory(AssSubtitleParserFactory(ass))
+        val extractors = DolbyVisionHevcExtractorsFactory(
+            DefaultExtractorsFactory().withSeekableAssMkv(AssSubtitleParserFactory(ass), ass, pgs),
+        ) { codecs.hevcOnly }
+        val dataSources = DefaultDataSource.Factory(context, upstream)
+        val subtitleParsers = LegacySubripParserFactory(assParsers)
+        val mediaSources = com.hesier.lumy.ui.player.legacy.LegacyRmMediaSourceFactory(
+            dataSources, extractors, subtitleParsers,
+            DefaultMediaSourceFactory(dataSources, extractors).setSubtitleParserFactory(subtitleParsers),
+        )
+
         val renderers = object : DefaultRenderersFactory(context) {
             /**
              * 默认关闭音频直通：解码成 PCM 才能支持倍速，也适合投影仪/电视自带喇叭。
@@ -92,20 +98,16 @@ object PlayerFactory {
 
             override fun buildTextRenderers(
                 context: Context,
-                output: TextOutput,
-                outputLooper: Looper,
+                output: androidx.media3.exoplayer.text.TextOutput,
+                outputLooper: android.os.Looper,
                 extensionRendererMode: Int,
                 out: ArrayList<Renderer>,
             ) {
-                val built = ArrayList<Renderer>()
-                super.buildTextRenderers(context, output, outputLooper, extensionRendererMode, built)
-                built.mapTo(out) { DelayedTextRenderer(it, offsets) }
+                super.buildTextRenderers(context, output, outputLooper, extensionRendererMode, out)
+                out.add(PgsSnapshotRenderer(output, outputLooper))
             }
 
-            /**
-             * 视频不用 FFmpeg 软解：硬解报“超出能力”时 ExoPlayer 会改选软解，
-             * 电视盒子软解 4K 必然卡成幻灯片。硬解不了的交给服务器转码。
-             */
+            // Keep hardware preferred; only explicitly enabled, bounded formats can use software.
             override fun buildVideoRenderers(
                 context: Context,
                 extensionRendererMode: Int,
@@ -115,10 +117,17 @@ object PlayerFactory {
                 eventListener: VideoRendererEventListener,
                 allowedVideoJoiningTimeMs: Long,
                 out: ArrayList<Renderer>,
-            ) = super.buildVideoRenderers(
-                context, EXTENSION_RENDERER_MODE_OFF, mediaCodecSelector, enableDecoderFallback,
-                eventHandler, eventListener, allowedVideoJoiningTimeMs, out,
-            )
+            ) {
+                super.buildVideoRenderers(
+                    context, EXTENSION_RENDERER_MODE_OFF, mediaCodecSelector, enableDecoderFallback,
+                    eventHandler, eventListener, allowedVideoJoiningTimeMs, out,
+                )
+                if (allowSoftwareVideo) out.add(
+                    com.hesier.lumy.ui.player.legacy.SoftwareVideoRenderer(
+                        allowedVideoJoiningTimeMs, eventHandler, eventListener,
+                    ),
+                )
+            }
         }
             // 先用系统（硬件）解码器，系统没有的格式（DTS、TrueHD 等）再交给 FFmpeg
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
@@ -126,14 +135,15 @@ object PlayerFactory {
             .setEnableDecoderFallback(true)
             .setMediaCodecSelector(codecs)
 
-        val player = ExoPlayer.Builder(context, AssRenderersFactory(ass, renderers))
-            .setMediaSourceFactory(mediaSources)
+        val delayedRenderers = DelayedSubtitleRenderersFactory(AssRenderersFactory(ass, renderers), offsets, ass)
+        val player = ExoPlayer.Builder(context, delayedRenderers)
+            .setMediaSourceFactory(SupMediaSourceFactory(mediaSources, dataSources))
             .setLoadControl(loadControl())
             .setSeekBackIncrementMs(10_000)
             .setSeekForwardIncrementMs(30_000)
             .build()
         ass.init(player)
-        return PlayerBundle(player, ass, codecs)
+        return PlayerBundle(player = player, ass = ass, codecs = codecs, pgs = pgs)
     }
 
     /**

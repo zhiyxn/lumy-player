@@ -14,6 +14,11 @@ sealed interface PlaybackMode {
         /** 把字幕烧进画面，用于客户端无法渲染的字幕（如外挂 PGS） */
         val burnSubtitleId: String? = null,
         /**
+         * 把这条内封字幕原样放进转码输出，由本机渲染（见 [MediaServer.embedsSubtitles]）。
+         * 输出是从起播点开始的 MKV 流，不能跳转，跳转要重新起播
+         */
+        val embedSubtitleId: String? = null,
+        /**
          * 允许服务端原样复制视频流（只换封装）。本机解不了这路视频、限码率或烧录字幕时必须为 false，
          * 否则服务端会把同样解不了的视频原样送回来
          */
@@ -23,6 +28,11 @@ sealed interface PlaybackMode {
          * 需要服务端开启色调映射，否则画面还是发灰。为 true 时 [copyVideo] 必须为 false
          */
         val sdr: Boolean = false,
+        /**
+         * 本机能解码选中的原音轨。输出容器放得下时让服务端原样复制：
+         * [embedSubtitleId] 的 MKV 能带 TrueHD / DTS，HLS 的 TS 分片不行
+         */
+        val copyAudio: Boolean = false,
     ) : PlaybackMode
 }
 

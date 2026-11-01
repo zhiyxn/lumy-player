@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-[![CI](https://github.com/hesier/lumy-player/actions/workflows/ci.yml/badge.svg)](https://github.com/hesier/lumy-player/actions/workflows/ci.yml)
+[![CI](https://github.com/hesier/lumy-player/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/hesier/lumy-player/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/hesier/lumy-player)](https://github.com/hesier/lumy-player/releases/latest)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 ![Android 5.0+](https://img.shields.io/badge/Android-5.0%2B-3DDC84?logo=android&logoColor=white)
@@ -54,6 +54,8 @@
 
 从 [最新 Release](https://github.com/hesier/lumy-player/releases/latest) 下载 `lumy-player-vX.Y.Z.apk`，侧载到电视、盒子或投影仪上即可。需要 Android 5.0 及以上的 ARM 设备。
 
+之后的版本可以在应用内更新：每天检查一次新版本（设置 › 关于 里也可以手动检查更新），下载后打开系统安装界面。第一次安装时 Android 会要求允许 Lumy 安装应用。GitHub 很慢或打不开时，在同一处打开“下载镜像”。
+
 自己编译的 APK 签名不同，不能覆盖安装 Release 版本（反之亦然），需要先卸载旧版，服务器和设置要重新配置。
 
 ## 已知限制
@@ -61,7 +63,7 @@
 - 只显示电影和剧集媒体库，暂不支持音乐、照片等其他类型
 - 不支持直播电视 / DVR，不支持离线下载
 - 不支持 Plex Home 切换用户和 Jellyfin Quick Connect，请直接登录要使用的账号
-- 杜比视界 Profile 5 需要设备有杜比视界解码器，否则需要服务器转码（详见[播放与解码支持](docs/playback.zh-CN.md#杜比视界)）
+- 杜比视界 Profile 5 优先原生播放；不支持或失败时可尝试 HEVC 兼容播放，但颜色可能不正确。正确色彩仍需要支持对应 DV profile 的完整输出链（详见[播放与解码支持](docs/playback.zh-CN.md#杜比视界)）
 - 只支持 ARM 设备（`armeabi-v7a` / `arm64-v8a`）
 - 手机扫码输入要求手机和电视在同一局域网。打不开网页时，请关闭手机 VPN，检查路由器的访客网络或 AP 隔离；电视连着多个网络时，断开用不到的那个
 
@@ -112,7 +114,7 @@ keyPassword=...
 
 ### 发布版本
 
-推送 `v<versionName>` 格式的 tag（如 `v0.1.0`）会触发 [release.yml](.github/workflows/release.yml)，构建签名好的 APK 并上传到 GitHub Release。发布说明取自 [CHANGELOG.md](CHANGELOG.md) 和 [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) 里对应版本的那一节，任意一份缺少都会失败。需要在仓库里配置这些 secrets：
+推送 `v<versionName>` 格式的 tag（如 `v0.1.0`）会触发 [release.yml](.github/workflows/release.yml)，构建签名好的 APK 并上传到 GitHub Release。发布说明取自 [CHANGELOG.md](CHANGELOG.md) 和 [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) 里对应版本的那一节，任意一份缺少都会失败。工作流还会上传 `update.json`（版本号、APK 校验和、各语言的更新说明），应用内更新从最新 Release 读取它。打 tag 的提交必须已经合并进 `main`。需要在仓库里配置这些 secrets：
 
 | Secret | 值 |
 |---|---|
@@ -125,7 +127,7 @@ keyPassword=...
 
 ```
 core/          纯 Kotlin：媒体模型和 MediaServer 接口，与具体服务器无关
-net/           纯 Kotlin：手机扫码输入的局域网接收服务、旧版 Android 补充的 TLS 根证书
+net/           纯 Kotlin：手机扫码输入的局域网接收服务、旧版 Android 补充的 TLS 根证书、检查和下载新版本
 server-plex/   纯 Kotlin：Plex 账号、服务器发现、连接探测和 API 实现（OkHttp + kotlinx.serialization）
 server-jellyfin/ 纯 Kotlin：Jellyfin 和 Emby 的登录与 API 实现（两者接口同源，按 ServerKind 区分认证头）
 app/           Android 应用：界面（View + RecyclerView，无 Leanback/Compose）和播放器

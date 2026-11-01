@@ -9,14 +9,15 @@
     <string name="language_zh_hans" translatable="false">简体中文</string>
     <string name="language_zh_hant" translatable="false">繁體中文</string>
     <string name="sidebar_shown_n" translatable="false">%1$d / %2$d</string>
-    <string name="server_detail_user" translatable="false">%1$s · %2$s · %3$s</string>
-    <string name="server_detail" translatable="false">%1$s · %2$s</string>
+    <string name="server_detail_user" translatable="false">%1$s · %2$s</string>
+    <string name="server_detail" translatable="false">%1$s</string>
     <string name="rating" translatable="false">★ %1$.1f</string>
     <string name="quality_transcode" translatable="false">%1$s · %2$s Mbps</string>
 
     <string name="login_title">Sign in to Plex</string>
     <string name="login_step1">On your phone or computer, open</string>
-    <string name="login_step2">Sign in and enter this code</string>
+    <string name="login_step2">Or sign in and enter this code</string>
+    <string name="login_scan">Scan with your phone to sign in</string>
     <string name="login_waiting">Waiting for authorization…</string>
     <string name="login_refresh">Get a new code</string>
     <string name="login_error">Can\'t reach plex.tv: %1$s</string>
@@ -88,6 +89,8 @@
     <string name="settings_section_servers">Servers</string>
     <string name="settings_section_about">About</string>
     <string name="settings_default_quality">Default quality</string>
+    <string name="settings_allow_software_video_decoding">Allow software video decoding</string>
+    <string name="settings_allow_software_video_decoding_detail">Try software decoding for H.264 / RV40 SDR videos up to 1080p when hardware decoding is unavailable. Playback may stutter depending on the device, video codec and frame rate. Audio decoding is unaffected</string>
     <string name="settings_passthrough">Audio passthrough</string>
     <string name="settings_passthrough_detail">Turn on when using an AV receiver so it decodes Dolby/DTS audio. Speed can\'t be changed while a track is passed through</string>
     <string name="settings_auto_next">Autoplay next episode</string>
@@ -158,7 +161,7 @@
     <string name="device_info_unsupported">Not supported</string>
     <string name="device_info_ten_bit">%1$s, 10-bit</string>
     <string name="device_info_dolby_vision">Dolby Vision</string>
-    <string name="device_info_dovi_base_layer">Dolby Vision played as HDR10 base layer: %1$s</string>
+    <string name="device_info_dovi_base_layer">Dolby Vision using HEVC compatibility playback: %1$s</string>
     <string name="device_info_audio_note">Depends on the connected TV or AV receiver</string>
     <string name="device_info_separator">", "</string>
     <string name="on">On</string>
@@ -293,8 +296,9 @@
     <string name="settings_display_hdr">TV supports HDR</string>
     <string name="settings_display_hdr_detail">When off, the server converts HDR and Dolby Vision to 1080p SDR to avoid a washed-out picture. Needs transcoding allowed and HDR tone mapping on the server</string>
     <string name="settings_allow_burn">Allow server subtitle burn-in</string>
-    <string name="settings_allow_burn_detail">Off by default: subtitles are rendered on this device when possible, including ASS. Ones it can\'t show are always burned in when the video is re-encoded anyway</string>
+    <string name="settings_allow_burn_detail">Off by default: subtitles are rendered on this device when possible, including ASS. On Plex, ones it can\'t show are always burned in when the video is re-encoded anyway; Emby and Jellyfin send embedded subtitles along with the transcode for this device to render</string>
     <string name="player_error">Playback failed: %1$s</string>
+    <string name="player_back_again_exit">Press Back again to exit</string>
     <string name="player_fallback">This device can\'t play the file directly. Switched to server transcoding</string>
     <string name="player_unseekable_fallback">This file doesn\'t support seeking in direct play. Switched to server transcoding</string>
     <string name="player_network_error">Can\'t reach the server. Check your network</string>
@@ -305,7 +309,7 @@
     <string name="issue_direct_play_failed">Direct Play failed</string>
     <string name="issue_container">%1$s container not supported</string>
     <string name="issue_unknown_video_codec">Unsupported video codec %1$s</string>
-    <string name="issue_dovi_profile5">Dolby Vision Profile 5 not supported</string>
+    <string name="player_dovi_compatibility">Playing without Dolby Vision. Colors may be incorrect</string>
     <string name="issue_no_video_decoder">No %1$s decoder on this device</string>
     <string name="issue_video_too_demanding">Can\'t hardware-decode %1$s %2$s</string>
     <string name="issue_video_too_demanding_10bit">Can\'t hardware-decode %1$s 10-bit %2$s</string>
@@ -360,4 +364,29 @@
     <string name="phone_input_web_error">Could not send. Check the address and username. If the TV dialog was closed or the code expired, scan a new code. If it already shows your details, confirm on the TV.</string>
     <string name="phone_input_expired">Code expired. Close this dialog and open it again for a new code.</string>
     <string name="phone_input_unavailable">Cannot start phone input. Check the TV LAN connection, then reopen this dialog.</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_check_detail">Download the new version from GitHub and open the system installer</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_available_short">%1$s available</string>
+    <string name="update_up_to_date">You have the latest version</string>
+    <string name="update_check_failed">Could not check for updates: %1$s</string>
+    <string name="update_mirror_hint">If GitHub is slow or blocked, turn on Download mirror in Settings › About</string>
+    <string name="update_auto_check">Check for updates automatically</string>
+    <string name="update_auto_check_detail">At most once a day, when the app opens</string>
+    <string name="update_mirror">Download mirror</string>
+    <string name="update_mirror_detail">Check and download updates through a mirror when GitHub is slow or blocked</string>
+    <string name="update_mirror_url">Mirror address</string>
+    <string name="update_mirror_url_detail">The GitHub address is appended to it. Leave blank to use the default</string>
+    <string name="update_title">New version %1$s</string>
+    <string name="update_summary">Current version %1$s · download size %2$s</string>
+    <string name="update_now">Update</string>
+    <string name="update_skip">Skip this version</string>
+    <string name="update_downloading">Downloading %1$d%%</string>
+    <string name="update_progress">%1$s / %2$s</string>
+    <string name="update_install">Install</string>
+    <string name="update_retry">Retry</string>
+    <string name="update_download_failed">Download failed: %1$s</string>
+    <string name="update_checksum_failed">The downloaded file is incomplete or damaged. Try again, or use a different download mirror.</string>
+    <string name="update_allow_install">Allow Lumy to install apps in the settings that just opened, then come back and select Install.</string>
+    <string name="update_install_unavailable">This device cannot install updates from inside the app. Download the new version from %1$s and install it manually.</string>
 </resources>
